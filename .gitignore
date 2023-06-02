@@ -1,2 +1,9 @@
 /target
 .env
+/.idea/.gitignore
+/.idea/aws.xml
+/Cargo.lock
+/.idea/modules.xml
+/.idea/saveactions_settings.xml
+/.idea/shitty_lunch_picker.iml
+/.idea/vcs.xml
