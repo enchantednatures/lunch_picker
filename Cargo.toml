@@ -13,3 +13,5 @@ serde_json = "1.0.68"
 dotenv = "0.15.0"
 chrono = { version = "0.4.19", features = ["serde"] }
 dialoguer = "0.10.4"
+tracing = "0.1"
+tracing-subscriber = "0.3"

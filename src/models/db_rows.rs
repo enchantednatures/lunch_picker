@@ -1,9 +1,10 @@
 use chrono::DateTime;
 use chrono::Utc;
+use sqlx::types::Uuid;
 
 #[derive(Debug)]
 pub struct Recipe {
-    pub id: i32,
+    pub id: Uuid,
     pub name: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -11,8 +12,7 @@ pub struct Recipe {
 
 #[derive(Debug)]
 pub struct RecentMeal {
-    pub id: i32,
+    pub id: Uuid,
     pub name: String,
     pub created_at: DateTime<Utc>,
 }
-
