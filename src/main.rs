@@ -27,12 +27,8 @@ async fn add_homie(db_pool: &PgPool, name: String) -> Result<(), sqlx::Error> {
 }
 
 async fn get_homies(db_pool: &PgPool) -> Result<Vec<Homie>, sqlx::Error> {
-    let homies = sqlx::query_as!(
-        Homie,
-        r#"
-        SELECT id, name
-        FROM homies
-        "#
+    let homies = sqlx::query_file_as!(
+        Homie, "src/sql/get_all_homies.sql"
     )
         .fetch_all(db_pool)
         .await?;
