@@ -1,33 +1,67 @@
 {
-  "db": "PostgreSQL",
-  "3651e7500778396dd2b060a79465f5708b26bde8365986fc6d334abc76509943": {
+  "db": "SQLite",
+  "037622c053f229f6e5ce2684c9584c914f7e9548a1d6ada4a546e25f27ed7cc5": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "\n        INSERT INTO homies (name)\n        VALUES ($1)\n        "
+  },
+  "36ddfd7ade1b787d337a3bc999ae837cbb444218e5866e4a8f2ca16cc7e709be": {
     "describe": {
       "columns": [
         {
-          "name": "id",
+          "name": "id!",
           "ordinal": 0,
-          "type_info": "Int4"
+          "type_info": "Int64"
         },
         {
-          "name": "name",
+          "name": "name!",
           "ordinal": 1,
-          "type_info": "Varchar"
+          "type_info": "Text"
         },
         {
-          "name": "created_at",
+          "name": "created_at!",
           "ordinal": 2,
-          "type_info": "Timestamptz"
+          "type_info": "Datetime"
+        }
+      ],
+      "nullable": [
+        true,
+        true,
+        true
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "\n       SELECT id as \"id!\", name as \"name!\", created_at as \"created_at!\"\n       FROM recent_meals\n       ORDER BY created_at DESC\n       LIMIT 5\n       "
+  },
+  "afb4ccd754a972072740580ff3db9152835934cbb24f1c6570f75fef4a149052": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id!",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "name!",
+          "ordinal": 1,
+          "type_info": "Text"
         }
       ],
       "nullable": [
         false,
-        false,
         false
       ],
       "parameters": {
-        "Left": []
+        "Right": 0
       }
     },
-    "query": "\n       SELECT id, name, created_at\n       FROM recent_meals\n       ORDER BY created_at DESC\n       LIMIT 5\n       "
+    "query": "SELECT id as \"id!\", name as \"name!\"\nFROM homies"
   }
 }
