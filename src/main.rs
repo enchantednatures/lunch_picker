@@ -1,7 +1,6 @@
 use dialoguer::MultiSelect;
-use sqlx::PgPool;
-use sqlx::postgres::PgPoolOptions;
-use sqlx::types::Uuid;
+use sqlx::{migrate, SqlitePool};
+use sqlx::sqlite::SqlitePoolOptions;
 
 pub use models::db_rows::RecentMeal;
 pub use models::db_rows::Recipe;
@@ -9,11 +8,11 @@ pub use models::db_rows::Recipe;
 mod models;
 
 struct Homie {
-    pub id: Uuid,
+    pub id: i64,
     pub name: String,
 }
 
-async fn add_homie(db_pool: &PgPool, name: String) -> Result<(), sqlx::Error> {
+async fn add_homie(db_pool: &SqlitePool, name: String) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         INSERT INTO homies (name)
@@ -26,9 +25,10 @@ async fn add_homie(db_pool: &PgPool, name: String) -> Result<(), sqlx::Error> {
     Ok(())
 }
 
-async fn get_homies(db_pool: &PgPool) -> Result<Vec<Homie>, sqlx::Error> {
+async fn get_all_homies(db_pool: &SqlitePool) -> Result<Vec<Homie>, sqlx::Error> {
     let homies = sqlx::query_file_as!(
-        Homie, "src/sql/get_all_homies.sql"
+        Homie,
+        "src/sql/get_all_homies.sql"
     )
         .fetch_all(db_pool)
         .await?;
@@ -40,11 +40,11 @@ fn get_db_url() -> String {
     std::env::var("DATABASE_URL").expect("DATABASE_URL must be set")
 }
 
-async fn get_recent_meals(db_pool: &PgPool) -> Result<Vec<RecentMeal>, sqlx::Error> {
+async fn get_recent_meals(db_pool: &SqlitePool) -> Result<Vec<RecentMeal>, sqlx::Error> {
     let recent_meals = sqlx::query_as!(
         RecentMeal,
         r#"
-       SELECT id, name, created_at
+       SELECT id as "id!", name as "name!", created_at as "created_at!"
        FROM recent_meals
        ORDER BY created_at DESC
        LIMIT 5
@@ -52,7 +52,7 @@ async fn get_recent_meals(db_pool: &PgPool) -> Result<Vec<RecentMeal>, sqlx::Err
     )
         .fetch_all(db_pool)
         .await?;
-    Ok(recent_meals)
+    return Ok(recent_meals);
 }
 
 async fn get_home_homies(homies: &Vec<Homie>) -> Vec<String> {
@@ -74,26 +74,30 @@ async fn get_home_homies(homies: &Vec<Homie>) -> Vec<String> {
     let home_homies = chosen
         .iter()
         .map(|&index| {
-            homies_names[index].to_string()
+            return homies_names[index].to_string();
         })
         .collect();
-    home_homies
+    return home_homies;
 }
 
-async fn get_recipes(_db_pool: &PgPool) -> Result<Vec<Recipe>, sqlx::Error> {
+async fn get_recipes(db_pool: &SqlitePool) -> Result<Vec<Recipe>, sqlx::Error> {
     todo!()
 }
 
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
     let db_url = get_db_url();
-    let pool = PgPoolOptions::new()
+
+    let pool = SqlitePoolOptions::new()
         .max_connections(5)
         .connect(&db_url)
         .await?;
-    let homies = get_homies(&pool).await?;
 
-    let _home_homies = get_home_homies(&homies).await;
+    migrate!("./migrations").run(&pool).await?;
+
+    let homies = get_all_homies(&pool).await?;
+
+    let home_homies = get_home_homies(&homies).await;
     let recent = get_recent_meals(&pool).await?;
     println!("recents: {:?}", recent);
     Ok(())

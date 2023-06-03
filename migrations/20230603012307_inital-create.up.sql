@@ -1,20 +1,20 @@
 -- Add up migration script here
 CREATE TABLE recipes
 (
-    id         uuid PRIMARY KEY      DEFAULT uuid_generate_v4(),
-    name       VARCHAR(255) NOT NULL,
-    created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    id         INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name       VARCHAR(255)                      NOT NULL,
+    created_at TIMESTAMP                         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP                         NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE recent_meals
 (
-    id         uuid PRIMARY KEY      DEFAULT uuid_generate_v4(),
-    name       VARCHAR(255) NOT NULL,
-    created_at TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    id         INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name       VARCHAR(255)                      NOT NULL,
+    created_at TIMESTAMP                         NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE homies
 (
-    id   uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(255) NOT NULL
+    id   INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name VARCHAR(255)                      NOT NULL
 );
