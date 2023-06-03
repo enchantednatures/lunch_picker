@@ -56,7 +56,7 @@ async fn get_recent_meals(db_pool: &PgPool) -> Result<Vec<RecentMeal>, sqlx::Err
     )
         .fetch_all(db_pool)
         .await?;
-    return Ok(recent_meals);
+    Ok(recent_meals)
 }
 
 async fn get_home_homies(homies: &Vec<Homie>) -> Vec<String> {
@@ -78,13 +78,13 @@ async fn get_home_homies(homies: &Vec<Homie>) -> Vec<String> {
     let home_homies = chosen
         .iter()
         .map(|&index| {
-            return homies_names[index].to_string();
+            homies_names[index].to_string()
         })
         .collect();
-    return home_homies;
+    home_homies
 }
 
-async fn get_recipes(db_pool: &PgPool) -> Result<Vec<Recipe>, sqlx::Error> {
+async fn get_recipes(_db_pool: &PgPool) -> Result<Vec<Recipe>, sqlx::Error> {
     todo!()
 }
 
@@ -97,7 +97,7 @@ async fn main() -> Result<(), sqlx::Error> {
         .await?;
     let homies = get_homies(&pool).await?;
 
-    let home_homies = get_home_homies(&homies).await;
+    let _home_homies = get_home_homies(&homies).await;
     let recent = get_recent_meals(&pool).await?;
     println!("recents: {:?}", recent);
     Ok(())
