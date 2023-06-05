@@ -42,7 +42,7 @@ jobs:
         run: rustup show
       - uses: Swatinem/rust-cache@v2
       - name: Test
-        run: cargo xtask test
+        run: cargo test
 
   format:
     name: Check Formatting
@@ -53,7 +53,7 @@ jobs:
       - name: Setup toolchain
         run: rustup show
       - name: Check Format
-        run: cargo xtask format --check
+        run: cargo format --check
 
   clippy:
     name: Check Clippy Lints
@@ -65,4 +65,4 @@ jobs:
         run: rustup show
       - uses: Swatinem/rust-cache@v2
       - name: Check clippy lints
-        run: cargo xtask clippy
+        run: cargo clippy
