@@ -59,7 +59,9 @@ async fn get_recent_meals(db_pool: &SqlitePool) -> Result<Vec<RecentMeal>, sqlx:
 async fn get_home_homies(homies: &[Homie]) -> Vec<String> {
     let homies_names = homies
         .iter()
-        .map(|h| { return h.name.as_str(); })
+        .map(|h| {
+            return h.name.as_str();
+        })
         .collect::<Vec<&str>>();
     let chosen = MultiSelect::new()
         .with_prompt("Who's home?")
