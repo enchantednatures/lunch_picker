@@ -2,7 +2,7 @@
 #![allow(clippy::needless_return)]
 #![allow(dead_code)]
 
-use dialoguer::{Input, MultiSelect, Select};
+use dialoguer::{Input, MultiSelect};
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::{migrate, SqlitePool};
 
