@@ -2,7 +2,7 @@
 #![allow(clippy::needless_return)]
 #![allow(dead_code)]
 
-use dialoguer::MultiSelect;
+use dialoguer::{Input, MultiSelect, Select};
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::{migrate, SqlitePool};
 
@@ -16,7 +16,7 @@ struct Homie {
     pub name: String,
 }
 
-async fn add_homie(db_pool: &SqlitePool, name: String) -> Result<(), sqlx::Error> {
+async fn add_homie(db_pool: &SqlitePool, name: &str) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         INSERT INTO homies (name)
@@ -87,6 +87,30 @@ async fn get_recipes(_db_pool: &SqlitePool) -> Result<Vec<Recipe>, sqlx::Error> 
     todo!()
 }
 
+async fn add_homies() {
+    todo!();
+}
+
+async fn setup(db_pool: &SqlitePool) {
+    let mut input = Input::<String>::new()
+        .with_prompt("Enter homie's name")
+        .default("".into())
+        .interact_text()
+        .unwrap();
+
+    while !input.is_empty() {
+        println!("Adding homie: {}", input);
+        add_homie(db_pool, &input).await.unwrap();
+        input = Input::<String>::new()
+            .with_prompt("Add another homie? (leave blank to finish)")
+            .default("".into())
+            .interact()
+            .unwrap();
+
+        println!("Added homie: {}", input);
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
     let db_url = get_db_url();
@@ -96,6 +120,7 @@ async fn main() -> Result<(), sqlx::Error> {
         .connect(&db_url)
         .await?;
 
+    setup(&pool).await;
     migrate!("./migrations").run(&pool).await?;
 
     let homies = get_all_homies(&pool).await?;
