@@ -37,7 +37,7 @@ async fn get_all_homies(db_pool: &SqlitePool) -> Result<Vec<Homie>, sqlx::Error>
 
 fn get_db_url() -> String {
     dotenv::dotenv().ok();
-    std::env::var("DATABASE_URL").expect("DATABASE_URL must be set")
+    return std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 }
 
 async fn get_recent_meals(db_pool: &SqlitePool) -> Result<Vec<RecentMeal>, sqlx::Error> {
@@ -58,7 +58,7 @@ async fn get_recent_meals(db_pool: &SqlitePool) -> Result<Vec<RecentMeal>, sqlx:
 async fn get_home_homies(homies: &Vec<Homie>) -> Vec<String> {
     let homies_names = homies
         .iter()
-        .map(|h| h.name.as_str())
+        .map(|h| return h.name.as_str();)
         .collect::<Vec<&str>>();
     let chosen = MultiSelect::new()
         .with_prompt("Who's home?")
@@ -80,7 +80,7 @@ async fn get_home_homies(homies: &Vec<Homie>) -> Vec<String> {
     return home_homies;
 }
 
-async fn get_recipes(db_pool: &SqlitePool) -> Result<Vec<Recipe>, sqlx::Error> {
+async fn get_recipes(_db_pool: &SqlitePool) -> Result<Vec<Recipe>, sqlx::Error> {
     todo!()
 }
 
@@ -97,7 +97,7 @@ async fn main() -> Result<(), sqlx::Error> {
 
     let homies = get_all_homies(&pool).await?;
 
-    let home_homies = get_home_homies(&homies).await;
+    let _home_homies = get_home_homies(&homies).await;
     let recent = get_recent_meals(&pool).await?;
     println!("recents: {:?}", recent);
     Ok(())
