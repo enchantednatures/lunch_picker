@@ -53,7 +53,7 @@ jobs:
       - name: Setup toolchain
         run: rustup show
       - name: Check Format
-        run: cargo format --check
+        run: cargo fmt --check
 
   clippy:
     name: Check Clippy Lints

@@ -1,5 +1,4 @@
-use chrono::{NaiveDateTime};
-
+use chrono::NaiveDateTime;
 
 #[derive(Debug)]
 pub struct Recipe {
