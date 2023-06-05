@@ -24,7 +24,7 @@ jobs:
         run: rustup show
       - uses: Swatinem/rust-cache@v2
       - name: Build
-        run: cargo xtask build
+        run: cargo build
 
   test:
     name: Test
