@@ -26,14 +26,14 @@ async fn add_homie(db_pool: &SqlitePool, name: String) -> Result<(), sqlx::Error
     )
         .execute(db_pool)
         .await?;
-    Ok(())
+    return Ok(());
 }
 
 async fn get_all_homies(db_pool: &SqlitePool) -> Result<Vec<Homie>, sqlx::Error> {
     let homies = sqlx::query_file_as!(Homie, "src/sql/get_all_homies.sql")
         .fetch_all(db_pool)
         .await?;
-    Ok(homies)
+    return Ok(homies);
 }
 
 fn get_db_url() -> String {
