@@ -1,3 +1,6 @@
+#![deny(clippy::implicit_return)]
+#![allow(clippy::needless_return)]
+
 use dialoguer::MultiSelect;
 use sqlx::{migrate, SqlitePool};
 use sqlx::sqlite::SqlitePoolOptions;
