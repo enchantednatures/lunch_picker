@@ -3,8 +3,8 @@
 #![allow(dead_code)]
 
 use dialoguer::MultiSelect;
-use sqlx::{migrate, SqlitePool};
 use sqlx::sqlite::SqlitePoolOptions;
+use sqlx::{migrate, SqlitePool};
 
 pub use models::db_rows::RecentMeal;
 pub use models::db_rows::Recipe;
@@ -24,8 +24,8 @@ async fn add_homie(db_pool: &SqlitePool, name: String) -> Result<(), sqlx::Error
         "#,
         name
     )
-        .execute(db_pool)
-        .await?;
+    .execute(db_pool)
+    .await?;
     return Ok(());
 }
 
@@ -51,8 +51,8 @@ async fn get_recent_meals(db_pool: &SqlitePool) -> Result<Vec<RecentMeal>, sqlx:
        LIMIT 5
        "#
     )
-        .fetch_all(db_pool)
-        .await?;
+    .fetch_all(db_pool)
+    .await?;
     return Ok(recent_meals);
 }
 
