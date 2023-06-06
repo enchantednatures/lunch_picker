@@ -1,6 +1,6 @@
 {
   "db": "SQLite",
-  "037622c053f229f6e5ce2684c9584c914f7e9548a1d6ada4a546e25f27ed7cc5": {
+  "072021a150e706301f8edc4befff32ba1bea09c0c409ab47909ce67520029f11": {
     "describe": {
       "columns": [],
       "nullable": [],
@@ -8,9 +8,9 @@
         "Right": 1
       }
     },
-    "query": "\n        INSERT INTO homies (name)\n        VALUES ($1)\n        "
+    "query": "insert into recipes (name)\nVALUES (?);"
   },
-  "36ddfd7ade1b787d337a3bc999ae837cbb444218e5866e4a8f2ca16cc7e709be": {
+  "754c23de7fbb15b5bdb8ba3e92405d96694162a40234b1690c0aeaa2308d5c3d": {
     "describe": {
       "columns": [
         {
@@ -22,23 +22,57 @@
           "name": "name!",
           "ordinal": 1,
           "type_info": "Text"
-        },
-        {
-          "name": "created_at!",
-          "ordinal": 2,
-          "type_info": "Datetime"
         }
       ],
       "nullable": [
         true,
-        true,
         true
       ],
       "parameters": {
-        "Right": 0
+        "Right": 1
       }
     },
-    "query": "\n       SELECT id as \"id!\", name as \"name!\", created_at as \"created_at!\"\n       FROM recent_meals\n       ORDER BY created_at DESC\n       LIMIT 5\n       "
+    "query": "\n       SELECT recipes.id as \"id!\", recipes.name as \"name!\"\n       FROM recipes\n       JOIN homies_favorites ON recipes.id = homies_favorites.recipe_id\n       JOIN homies ON homies_favorites.homie_id = homies.id\n       WHERE homies.name IN (?)\n       ORDER BY recipes.created_at DESC\n       LIMIT 5\n       "
+  },
+  "8e3b80e0d6613be7cd595fe2cb63d315dd1e0a0e605ae5b4a0dd32433d04c9b4": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "homie_id",
+          "ordinal": 1,
+          "type_info": "Int64"
+        },
+        {
+          "name": "recipe_id",
+          "ordinal": 2,
+          "type_info": "Int64"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT id, homie_id, recipe_id\nFROM homies_favorites\nWHERE homie_id = ?"
+  },
+  "a6af59bff121b79ecd965e8d73733055d85c984cc35701afe41e7f14b0a5289a": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "INSERT INTO homies (name)\nVALUES ($1)\n"
   },
   "afb4ccd754a972072740580ff3db9152835934cbb24f1c6570f75fef4a149052": {
     "describe": {
@@ -63,5 +97,73 @@
       }
     },
     "query": "SELECT id as \"id!\", name as \"name!\"\nFROM homies"
+  },
+  "b746e0821eb92104f8f6fa4015665ad7593475497caad8a65f64b364ec3e3a37": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "DELETE\nFROM homies_favorites\nWHERE homie_id = (?);\n\n"
+  },
+  "c44d24db870a80810cde4bd812478230764e67a61ef00b78f8de8f7a7b82e24f": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "SELECT id, name\nFROM recipes;"
+  },
+  "caee0c1641b3cef243c6d8247eb8a74b8ad182e12d40cc55a9fdbc138a4fc312": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Right": 2
+      }
+    },
+    "query": "INSERT INTO homies_favorites (homie_id, recipe_id)\nVALUES (?, ?);"
+  },
+  "e73d1f1670ad61a2d4daec6c9cc980cf4a48e59100123c2bf192e4020a7d1bcd": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id!",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "name!",
+          "ordinal": 1,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        true,
+        true
+      ],
+      "parameters": {
+        "Right": 0
+      }
+    },
+    "query": "\n       SELECT id as \"id!\", name as \"name!\"\n       FROM recent_meals\n       ORDER BY created_at DESC\n       LIMIT 5\n       "
   }
 }
