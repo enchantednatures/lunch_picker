@@ -2,6 +2,10 @@
 #![allow(clippy::needless_return)]
 #![allow(dead_code)]
 
+use std::fs;
+use std::fs::File;
+use std::io::Write;
+
 use dialoguer::{Input, MultiSelect};
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::{migrate, SqlitePool};
@@ -83,14 +87,6 @@ async fn get_home_homies(homies: &[Homie]) -> Vec<String> {
     return home_homies;
 }
 
-async fn get_recipes(_db_pool: &SqlitePool) -> Result<Vec<Recipe>, sqlx::Error> {
-    todo!()
-}
-
-async fn add_homies() {
-    todo!();
-}
-
 async fn setup(db_pool: &SqlitePool) {
     let mut input = Input::<String>::new()
         .with_prompt("Enter homie's name")
@@ -111,17 +107,42 @@ async fn setup(db_pool: &SqlitePool) {
     }
 }
 
+fn check_if_file_exists(path: &str) -> bool {
+    return std::path::Path::new(path).exists();
+}
+
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
-    let db_url = get_db_url();
+    let config_file_path = "./.shitty_lunch_picker.config";
+    let mut db_url = String::new();
+
+    if !check_if_file_exists(config_file_path) {
+        println!("Config file doesn't exist");
+        let mut file = File::create(config_file_path).unwrap();
+        db_url = Input::<String>::new()
+            .with_prompt("Enter database url")
+            .default("./.shitty_lunch_picker.db".into())
+            .interact()
+            .unwrap();
+        file.write_all(db_url.as_bytes()).unwrap();
+    }
+
+    if db_url.is_empty() {
+        db_url = fs::read_to_string(config_file_path).expect("Failed to read config file");
+    }
+    if !check_if_file_exists(&db_url) {
+        println!("Database file doesn't exist");
+        File::create(&db_url).unwrap();
+    }
 
     let pool = SqlitePoolOptions::new()
         .max_connections(5)
         .connect(&db_url)
         .await?;
 
-    setup(&pool).await;
     migrate!("./migrations").run(&pool).await?;
+
+    setup(&pool).await;
 
     let homies = get_all_homies(&pool).await?;
 
