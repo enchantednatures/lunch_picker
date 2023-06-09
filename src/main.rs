@@ -2,13 +2,15 @@
 #![allow(clippy::needless_return)]
 #![allow(dead_code)]
 
+use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 
 use dialoguer::{Input, MultiSelect, Select};
+use rand::seq::SliceRandom;
+use sqlx::{migrate, Pool, query_file, query_file_as, Sqlite, SqlitePool};
 use sqlx::sqlite::SqlitePoolOptions;
-use sqlx::{migrate, query_file, query_file_as, SqlitePool};
 
 use models::db_rows::Homie;
 use models::db_rows::HomiesFavorite;
@@ -18,22 +20,17 @@ use models::db_rows::Recipe;
 mod models;
 
 async fn add_homie(db_pool: &SqlitePool, name: &str) -> Result<(), sqlx::Error> {
-    sqlx::query_file!("src/sql/insert_homie.sql", name)
+    query_file!("src/sql/insert_homie.sql", name)
         .execute(db_pool)
         .await?;
     return Ok(());
 }
 
 async fn get_all_homies(db_pool: &SqlitePool) -> Result<Vec<Homie>, sqlx::Error> {
-    let homies = sqlx::query_file_as!(Homie, "src/sql/get_all_homies.sql")
+    let homies = query_file_as!(Homie, "src/sql/get_all_homies.sql")
         .fetch_all(db_pool)
         .await?;
     return Ok(homies);
-}
-
-fn get_db_url() -> String {
-    dotenv::dotenv().ok();
-    return std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 }
 
 async fn get_recent_meals(db_pool: &SqlitePool) -> Result<Vec<RecentMeal>, sqlx::Error> {
@@ -46,12 +43,12 @@ async fn get_recent_meals(db_pool: &SqlitePool) -> Result<Vec<RecentMeal>, sqlx:
        LIMIT 5
        "#
     )
-    .fetch_all(db_pool)
-    .await?;
+        .fetch_all(db_pool)
+        .await?;
     return Ok(recent_meals);
 }
 
-async fn get_home_homies(homies: &[Homie]) -> Vec<String> {
+async fn get_home_homies(homies: &[Homie]) -> Vec<&Homie> {
     let homies_names = homies
         .iter()
         .map(|h| {
@@ -65,14 +62,14 @@ async fn get_home_homies(homies: &[Homie]) -> Vec<String> {
         .unwrap();
     if chosen.is_empty() {
         println!("No homies selected");
-        return vec![];
+        return homies.iter().collect();
     } else {
         println!("Homies selected: {:?}", chosen);
     }
     let home_homies = chosen
         .iter()
         .map(|&index| {
-            return homies_names[index].to_string();
+            return &homies[index];
         })
         .collect();
     return home_homies;
@@ -83,77 +80,106 @@ async fn get_user_input_homies_favorites(
     homies: &[Homie],
     recipes: &[Recipe],
 ) -> Result<(), sqlx::Error> {
-    let selected_homie_idx = Select::new()
-        .with_prompt("Who's favorites are you adding?")
-        .items(
-            &homies
-                .iter()
-                .map(|h| {
-                    return h.name.as_str();
-                })
-                .collect::<Vec<&str>>(),
+    let mut c = true;
+    while c {
+        let selected_homie_idx = Select::new()
+            .with_prompt("Who's favorites are you adding?")
+            .items(
+                &homies
+                    .iter()
+                    .map(|h| {
+                        return h.name.as_str();
+                    })
+                    .collect::<Vec<&str>>(),
+            )
+            .interact()
+            .unwrap();
+        let current_homie = &homies[selected_homie_idx];
+        let homies_favorites = query_file_as!(
+            HomiesFavorite,
+            "src/sql/get_homies_favorites.sql",
+            current_homie.id
         )
-        .interact()
-        .unwrap();
-    let current_homie = &homies[selected_homie_idx];
+            .fetch_all(db_pool)
+            .await?;
 
-    let homies_favorites = query_file_as!(
-        HomiesFavorite,
-        "src/sql/get_homies_favorites.sql",
-        current_homie.id
-    )
-    .fetch_all(db_pool)
-    .await?;
+        let homies_favorites_ids = homies_favorites
+            .iter()
+            .map(|hf| {
+                return hf.recipe_id;
+            })
+            .collect::<Vec<i64>>();
 
-    let homies_favorites_ids = homies_favorites
-        .iter()
-        .map(|hf| {
-            return hf.recipe_id;
-        })
-        .collect::<Vec<i64>>();
+        let is_favorite_map: Vec<bool> = recipes
+            .iter()
+            .map(|x| {
+                return homies_favorites_ids.contains(&x.id);
+            })
+            .collect();
 
-    let is_favorite_map: Vec<bool> = recipes
-        .iter()
-        .map(|x| {
-            return homies_favorites_ids.contains(&x.id);
-        })
-        .collect();
+        let input = MultiSelect::new()
+            .with_prompt("What are {}'s favorites?")
+            .items(
+                &recipes
+                    .iter()
+                    .map(|r| {
+                        return r.name.as_str();
+                    })
+                    .collect::<Vec<&str>>(),
+            )
+            .defaults(&is_favorite_map)
+            .interact()
+            .unwrap();
 
-    let input = MultiSelect::new()
-        .with_prompt("What are {}'s favorites?")
-        .items(
-            &recipes
-                .iter()
-                .map(|r| {
-                    return r.name.as_str();
-                })
-                .collect::<Vec<&str>>(),
-        )
-        .defaults(&is_favorite_map)
-        .interact()
-        .unwrap();
+        let new_favorites = input
+            .iter()
+            .map(|&index| {
+                return recipes[index].id;
+            })
+            .collect::<Vec<i64>>();
 
-    let new_favorites = input
-        .iter()
-        .map(|&index| {
-            return recipes[index].id;
-        })
-        .collect::<Vec<i64>>();
+        query_file!("src/sql/delete_homies_favorites.sql", current_homie.id)
+            .execute(db_pool)
+            .await?;
 
-    query_file!("src/sql/delete_homies_favorites.sql", current_homie.id)
-        .execute(db_pool)
-        .await?;
-
-    for recipe_id in new_favorites.iter() {
-        query_file!(
-            "src/sql/insert_homies_favorites.sql",
-            current_homie.id,
-            recipe_id
-        )
-        .execute(db_pool)
-        .await?;
+        for recipe_id in new_favorites.iter() {
+            query_file!(
+                "src/sql/insert_homies_favorites.sql",
+                current_homie.id,
+                recipe_id
+            )
+                .execute(db_pool)
+                .await?;
+        }
+        let input = Select::new()
+            .with_prompt("Add another favorite?")
+            .items(&["Yes", "No"])
+            .default(1)
+            .interact()
+            .unwrap();
+        if input == 1 {
+            c = false;
+        }
     }
     return Ok(());
+}
+
+async fn setup_foods(db_pool: &SqlitePool) {
+    let mut input = Input::<String>::new()
+        .with_prompt("Enter food name")
+        .default("".into())
+        .interact_text()
+        .unwrap();
+
+    while !input.is_empty() {
+        println!("Adding food: {}", input);
+        add_recipe(db_pool, &input).await.unwrap();
+        input = Input::<String>::new()
+            .with_prompt("Enter food name")
+            .default("".into())
+            .interact_text()
+            .unwrap();
+    }
 }
 
 async fn setup(db_pool: &SqlitePool) {
@@ -174,6 +200,7 @@ async fn setup(db_pool: &SqlitePool) {
 
         println!("Added homie: {}", input);
     }
+    setup_foods(db_pool).await;
 
     let all_homies = get_all_homies(db_pool).await.unwrap();
     let recipes = get_all_recipes(db_pool).await;
@@ -183,7 +210,7 @@ async fn setup(db_pool: &SqlitePool) {
 }
 
 async fn get_all_recipes(db_pool: &SqlitePool) -> Vec<Recipe> {
-    let recipes = sqlx::query_file_as!(Recipe, "src/sql/get_all_recipes.sql")
+    let recipes = query_file_as!(Recipe, "src/sql/get_all_recipes.sql")
         .fetch_all(db_pool)
         .await
         .unwrap();
@@ -196,15 +223,26 @@ fn check_if_file_exists(path: &str) -> bool {
 }
 
 async fn add_recipe(db_pool: &SqlitePool, name: &str) -> Result<(), sqlx::Error> {
-    sqlx::query_file!("src/sql/insert_recipe.sql", name)
+    query_file!("src/sql/insert_recipe.sql", name)
         .execute(db_pool)
         .await?;
     return Ok(());
 }
 
-async fn get_favorites_for_home_homies(
+async fn get_favorites_for_home_homie(
     db_pool: &SqlitePool,
-    home_homies: &[Homie],
+    homie: &Homie,
+) -> Result<Vec<HomiesFavorite>, sqlx::Error> {
+    let homies_favorites =
+        query_file_as!(HomiesFavorite, "src/sql/get_homies_favorites.sql", homie.id)
+            .fetch_all(db_pool)
+            .await?;
+    return Ok(homies_favorites);
+}
+
+async fn get_recents_for_homies(
+    db_pool: &SqlitePool,
+    home_homies: &[&Homie],
 ) -> Result<Vec<Recipe>, sqlx::Error> {
     let home_homies = home_homies
         .iter()
@@ -227,8 +265,8 @@ async fn get_favorites_for_home_homies(
        "#,
         home_homies
     )
-    .fetch_all(db_pool)
-    .await?;
+        .fetch_all(db_pool)
+        .await?;
     return Ok(recipes);
 }
 
@@ -270,9 +308,59 @@ async fn main() -> Result<(), sqlx::Error> {
     }
 
     let homies = get_all_homies(&pool).await?;
-    let _home_homies = get_home_homies(&homies).await;
+    let home_homies = get_home_homies(&homies).await;
 
-    let recent = get_recent_meals(&pool).await?;
-    println!("recents: {:?}", recent);
+    let mut all_homies_favorites = Vec::<HomiesFavorite>::new();
+    for home_homie in home_homies.iter() {
+        let homies_favorites = get_favorites_for_home_homie(&pool, home_homie).await?;
+        all_homies_favorites.extend(homies_favorites);
+    }
+
+    let most_favorited_recipes = get_most_favorited_recipes(&all_homies_favorites).await;
+    println!("Home homies: {:?}", home_homies);
+    let mut rng = rand::thread_rng();
+    let random_recipe_id = most_favorited_recipes.choose(&mut rng).unwrap();
+    let random_recipe = get_recipe(&pool, *random_recipe_id).await;
+    println!("{:?}", random_recipe);
     Ok(())
+}
+
+async fn get_recipe(pool: &Pool<Sqlite>, recipe_id: &i64) -> Recipe {
+    let recipe = sqlx::query_as!(
+        Recipe,
+        "SELECT id, name FROM recipes WHERE id = ?",
+        recipe_id
+    )
+        .fetch_one(pool)
+        .await
+        .unwrap();
+    println!("{:?}", recipe);
+    return recipe;
+}
+
+async fn get_most_favorited_recipes(homies_favorites: &[HomiesFavorite]) -> Vec<&i64> {
+    let mut recipe_counts = HashMap::<&i64, u32>::new();
+    for homies_favorite in homies_favorites.iter() {
+        let recipe = &homies_favorite.recipe_id;
+        let count = recipe_counts.entry(recipe).or_insert(0);
+        *count += 1;
+    }
+    let mut recipe_counts = recipe_counts.into_iter().collect::<Vec<(&i64, u32)>>();
+    recipe_counts.sort_by(|a, b| return b.1.cmp(&a.1););
+    let max_favorite = recipe_counts.iter().fold(0, |acc, (_, count)| {
+        if acc < *count {
+            return *count;
+        }
+        return acc;
+    });
+    let most_favorited_recipes = recipe_counts
+        .iter()
+        .filter(|(_, count)| {
+            return &max_favorite == count;
+        })
+        .map(|(recipe, _)| {
+            return *recipe;
+        })
+        .collect();
+    return most_favorited_recipes;
 }

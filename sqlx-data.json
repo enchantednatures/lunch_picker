@@ -10,6 +10,30 @@
     },
     "query": "insert into recipes (name)\nVALUES (?);"
   },
+  "423607f1fb67b919295e5317b21df8d461da819ee528bef1ac20418d5d370237": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int64"
+        },
+        {
+          "name": "name",
+          "ordinal": 1,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Right": 1
+      }
+    },
+    "query": "SELECT id, name FROM recipes WHERE id = ?"
+  },
   "754c23de7fbb15b5bdb8ba3e92405d96694162a40234b1690c0aeaa2308d5c3d": {
     "describe": {
       "columns": [
