@@ -320,7 +320,7 @@ async fn main() -> Result<(), sqlx::Error> {
     println!("Home homies: {:?}", home_homies);
     let mut rng = rand::thread_rng();
     let random_recipe_id = most_favorited_recipes.choose(&mut rng).unwrap();
-    let random_recipe = get_recipe(&pool, *random_recipe_id).await;
+    let random_recipe = get_recipe(&pool, random_recipe_id).await;
     println!("{:?}", random_recipe);
     Ok(())
 }
