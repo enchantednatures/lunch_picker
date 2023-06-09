@@ -1,5 +1,3 @@
-#![deny(clippy::implicit_return)]
-#![allow(clippy::needless_return)]
 #![allow(dead_code)]
 
 use std::collections::HashMap;
@@ -9,8 +7,8 @@ use std::io::Write;
 
 use dialoguer::{Input, MultiSelect, Select};
 use rand::seq::SliceRandom;
-use sqlx::{migrate, Pool, query_file, query_file_as, Sqlite, SqlitePool};
 use sqlx::sqlite::SqlitePoolOptions;
+use sqlx::{migrate, query_file, query_file_as, Pool, Sqlite, SqlitePool};
 
 use models::db_rows::Homie;
 use models::db_rows::HomiesFavorite;
@@ -43,8 +41,8 @@ async fn get_recent_meals(db_pool: &SqlitePool) -> Result<Vec<RecentMeal>, sqlx:
        LIMIT 5
        "#
     )
-        .fetch_all(db_pool)
-        .await?;
+    .fetch_all(db_pool)
+    .await?;
     return Ok(recent_meals);
 }
 
@@ -100,8 +98,8 @@ async fn get_user_input_homies_favorites(
             "src/sql/get_homies_favorites.sql",
             current_homie.id
         )
-            .fetch_all(db_pool)
-            .await?;
+        .fetch_all(db_pool)
+        .await?;
 
         let homies_favorites_ids = homies_favorites
             .iter()
@@ -148,8 +146,8 @@ async fn get_user_input_homies_favorites(
                 current_homie.id,
                 recipe_id
             )
-                .execute(db_pool)
-                .await?;
+            .execute(db_pool)
+            .await?;
         }
         let input = Select::new()
             .with_prompt("Add another favorite?")
@@ -265,8 +263,8 @@ async fn get_recents_for_homies(
        "#,
         home_homies
     )
-        .fetch_all(db_pool)
-        .await?;
+    .fetch_all(db_pool)
+    .await?;
     return Ok(recipes);
 }
 
@@ -331,9 +329,9 @@ async fn get_recipe(pool: &Pool<Sqlite>, recipe_id: &i64) -> Recipe {
         "SELECT id, name FROM recipes WHERE id = ?",
         recipe_id
     )
-        .fetch_one(pool)
-        .await
-        .unwrap();
+    .fetch_one(pool)
+    .await
+    .unwrap();
     println!("{:?}", recipe);
     return recipe;
 }
@@ -346,7 +344,7 @@ async fn get_most_favorited_recipes(homies_favorites: &[HomiesFavorite]) -> Vec<
         *count += 1;
     }
     let mut recipe_counts = recipe_counts.into_iter().collect::<Vec<(&i64, u32)>>();
-    recipe_counts.sort_by(|a, b| return b.1.cmp(&a.1););
+    recipe_counts.sort_by(|a, b| b.1.cmp(&a.1));
     let max_favorite = recipe_counts.iter().fold(0, |acc, (_, count)| {
         if acc < *count {
             return *count;
