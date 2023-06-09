@@ -21,14 +21,14 @@ async fn add_homie(db_pool: &SqlitePool, name: &str) -> Result<(), sqlx::Error> 
     query_file!("src/sql/insert_homie.sql", name)
         .execute(db_pool)
         .await?;
-    return Ok(());
+    Ok(())
 }
 
 async fn get_all_homies(db_pool: &SqlitePool) -> Result<Vec<Homie>, sqlx::Error> {
     let homies = query_file_as!(Homie, "src/sql/get_all_homies.sql")
         .fetch_all(db_pool)
         .await?;
-    return Ok(homies);
+    Ok(homies)
 }
 
 async fn get_recent_meals(db_pool: &SqlitePool) -> Result<Vec<RecentMeal>, sqlx::Error> {
@@ -43,7 +43,7 @@ async fn get_recent_meals(db_pool: &SqlitePool) -> Result<Vec<RecentMeal>, sqlx:
     )
     .fetch_all(db_pool)
     .await?;
-    return Ok(recent_meals);
+    Ok(recent_meals)
 }
 
 async fn get_home_homies(homies: &[Homie]) -> Vec<&Homie> {
@@ -64,13 +64,8 @@ async fn get_home_homies(homies: &[Homie]) -> Vec<&Homie> {
     } else {
         println!("Homies selected: {:?}", chosen);
     }
-    let home_homies = chosen
-        .iter()
-        .map(|&index| {
-            return &homies[index];
-        })
-        .collect();
-    return home_homies;
+    let home_homies = chosen.iter().map(|&index| &homies[index]).collect();
+    home_homies
 }
 
 async fn get_user_input_homies_favorites(
@@ -103,16 +98,12 @@ async fn get_user_input_homies_favorites(
 
         let homies_favorites_ids = homies_favorites
             .iter()
-            .map(|hf| {
-                return hf.recipe_id;
-            })
+            .map(|hf| hf.recipe_id)
             .collect::<Vec<i64>>();
 
         let is_favorite_map: Vec<bool> = recipes
             .iter()
-            .map(|x| {
-                return homies_favorites_ids.contains(&x.id);
-            })
+            .map(|x| homies_favorites_ids.contains(&x.id))
             .collect();
 
         let input = MultiSelect::new()
@@ -131,9 +122,7 @@ async fn get_user_input_homies_favorites(
 
         let new_favorites = input
             .iter()
-            .map(|&index| {
-                return recipes[index].id;
-            })
+            .map(|&index| recipes[index].id)
             .collect::<Vec<i64>>();
 
         query_file!("src/sql/delete_homies_favorites.sql", current_homie.id)
@@ -159,7 +148,7 @@ async fn get_user_input_homies_favorites(
             c = false;
         }
     }
-    return Ok(());
+    Ok(())
 }
 
 async fn setup_foods(db_pool: &SqlitePool) {
@@ -213,7 +202,7 @@ async fn get_all_recipes(db_pool: &SqlitePool) -> Vec<Recipe> {
         .await
         .unwrap();
     println!("Recipes: {:?}", recipes);
-    return recipes;
+    recipes
 }
 
 fn check_if_file_exists(path: &str) -> bool {
@@ -224,7 +213,7 @@ async fn add_recipe(db_pool: &SqlitePool, name: &str) -> Result<(), sqlx::Error>
     query_file!("src/sql/insert_recipe.sql", name)
         .execute(db_pool)
         .await?;
-    return Ok(());
+    Ok(())
 }
 
 async fn get_favorites_for_home_homie(
@@ -235,7 +224,7 @@ async fn get_favorites_for_home_homie(
         query_file_as!(HomiesFavorite, "src/sql/get_homies_favorites.sql", homie.id)
             .fetch_all(db_pool)
             .await?;
-    return Ok(homies_favorites);
+    Ok(homies_favorites)
 }
 
 async fn get_recents_for_homies(
@@ -265,7 +254,7 @@ async fn get_recents_for_homies(
     )
     .fetch_all(db_pool)
     .await?;
-    return Ok(recipes);
+    Ok(recipes)
 }
 
 #[tokio::main]
@@ -333,7 +322,7 @@ async fn get_recipe(pool: &Pool<Sqlite>, recipe_id: &i64) -> Recipe {
     .await
     .unwrap();
     println!("{:?}", recipe);
-    return recipe;
+    recipe
 }
 
 async fn get_most_favorited_recipes(homies_favorites: &[HomiesFavorite]) -> Vec<&i64> {
@@ -349,16 +338,12 @@ async fn get_most_favorited_recipes(homies_favorites: &[HomiesFavorite]) -> Vec<
         if acc < *count {
             return *count;
         }
-        return acc;
+        acc
     });
     let most_favorited_recipes = recipe_counts
         .iter()
-        .filter(|(_, count)| {
-            return &max_favorite == count;
-        })
-        .map(|(recipe, _)| {
-            return *recipe;
-        })
+        .filter(|(_, count)| &max_favorite == count)
+        .map(|(recipe, _)| *recipe)
         .collect();
-    return most_favorited_recipes;
+    most_favorited_recipes
 }
