@@ -1,0 +1,16 @@
+GET {{url}}
+Accept: application/json
+
+###
+GET {{url}}health_check
+Accept: application/json
+
+###
+PUT {{url}}create_recipe
+Content-Type: application/json
+Accept: */*
+Accept-Encoding: */*
+
+{
+  "name": "tacos"
+}
