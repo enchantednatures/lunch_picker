@@ -19,6 +19,7 @@ use tower_http::trace::TraceLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse};
 use tower_http::ServiceBuilderExt;
 
+use crate::api::create_homie;
 use crate::api::{health_check, MyMakeRequestId};
 
 mod algorithms;
@@ -82,6 +83,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/", get(|| async { "Hello, World!" }))
         .route("/health_check", get(health_check))
         .route("/create_recipe", put(create_recipe))
+        .route("/create_homie", put(create_homie))
         .with_state(state)
         .layer(svc);
 
