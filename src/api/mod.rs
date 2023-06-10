@@ -8,12 +8,14 @@ use serde_json::{json, Value};
 use sqlx::query_file;
 use sqlx::types::Uuid;
 
+pub use health::health_check;
 pub use homies::create_homie;
 use tower_http::request_id::MakeRequestId;
 use tower_http::request_id::RequestId;
 
 use crate::startup::AppState;
 
+mod health;
 mod homies;
 
 #[derive(Clone, Default)]
@@ -32,10 +34,6 @@ impl MakeRequestId for MyMakeRequestId {
 
         Some(RequestId::new(request_id))
     }
-}
-
-pub async fn health_check() -> Json<Value> {
-    Json(json!({ "status": "OK"}))
 }
 
 #[derive(serde::Deserialize)]

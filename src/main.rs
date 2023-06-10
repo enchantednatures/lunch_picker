@@ -12,6 +12,7 @@ use sqlx::migrate;
 use sqlx::sqlite::SqlitePoolOptions;
 
 use api::create_recipe;
+use api::health_check;
 use startup::AppState;
 use tower::ServiceBuilder;
 use tower_http::compression::CompressionLayer;
@@ -20,7 +21,7 @@ use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse};
 use tower_http::ServiceBuilderExt;
 
 use crate::api::create_homie;
-use crate::api::{health_check, MyMakeRequestId};
+use crate::api::MyMakeRequestId;
 
 mod algorithms;
 mod api;

@@ -14,3 +14,13 @@ Accept-Encoding: */*
 {
   "name": "tacos"
 }
+
+###
+PUT {{url}}create_homie
+Content-Type: application/json
+Accept: */*
+Accept-Encoding: */*
+
+{
+  "name": "Hunter"
+}
