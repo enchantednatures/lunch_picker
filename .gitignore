@@ -12,5 +12,6 @@
 /.archive/gooby.db
 /cli/target/
 /api/target/
+/common/target/
 /.archive/
 .env/
