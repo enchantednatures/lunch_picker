@@ -24,3 +24,13 @@ Accept-Encoding: */*
 {
   "name": "Hunter"
 }
+
+###
+PUT {{url}}create_homie
+Content-Type: application/json
+Accept: */*
+Accept-Encoding: */*
+
+{
+  "name": "Sienna"
+}

@@ -26,13 +26,15 @@ impl Recipe {
 
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct HomiesFavorite {
+    pub id: i64,
     pub homie_id: i64,
     pub recipe_id: i64,
 }
 
 impl HomiesFavorite {
-    pub fn new(homie_id: i64, recipe_id: i64) -> Self {
+    pub fn new(id: i64, homie_id: i64, recipe_id: i64) -> Self {
         Self {
+            id,
             homie_id,
             recipe_id,
         }

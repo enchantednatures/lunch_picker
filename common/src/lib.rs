@@ -1,6 +1,9 @@
 #![allow(dead_code)]
-mod db;
-mod domain;
+
+pub use domain::*;
+
+pub mod db;
+pub mod domain;
 
 #[cfg(test)]
 mod tests {
