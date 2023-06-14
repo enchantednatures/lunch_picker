@@ -15,4 +15,5 @@
 /common/target/
 /.archive/
 .env
-Cargo.toml
+/Cargo.lock
+/shitty_lunch_picker.db
