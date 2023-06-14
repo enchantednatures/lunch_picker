@@ -1,18 +1,20 @@
-#[allow(dead_code)]
+#![allow(dead_code)]
+
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 
 use dialoguer::Input;
-
-use cli::{
-    check_if_file_exists, get_all_homies, get_favorites_for_home_homie, get_home_homies,
-    get_most_favorited_recipes, get_recipe, setup, CONFIG_FILE,
-};
-use common::domain::HomiesFavorite;
 use rand::prelude::SliceRandom;
 use sqlx::migrate;
 use sqlx::sqlite::SqlitePoolOptions;
+
+use cli::setup;
+use common::domain::HomiesFavorite;
+use common::{
+    check_if_file_exists, get_all_homies, get_favorites_for_home_homie, get_most_favorited_recipes,
+    get_recipe, CONFIG_FILE,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), sqlx::Error> {
@@ -52,7 +54,7 @@ async fn main() -> Result<(), sqlx::Error> {
     }
 
     let homies = get_all_homies(&pool).await?;
-    let home_homies = get_home_homies(&homies).await;
+    let home_homies = cli::get_home_homies(&homies).await;
 
     let mut all_homies_favorites = Vec::<HomiesFavorite>::new();
     for home_homie in home_homies.iter() {

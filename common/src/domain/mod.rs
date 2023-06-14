@@ -40,3 +40,10 @@ impl HomiesFavorite {
         }
     }
 }
+
+#[derive(Debug)]
+pub struct RecentMeal {
+    pub id: i64,
+    pub name: String,
+    // pub created_at: NaiveDateTime,
+}
