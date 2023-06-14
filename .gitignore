@@ -14,4 +14,4 @@
 /api/target/
 /common/target/
 /.archive/
-.env/
+.env
