@@ -1,26 +1,8 @@
 #![allow(dead_code)]
 
-use std::fs;
-use std::fs::File;
-use std::io::Write;
-use std::sync::Arc;
-use std::{net::SocketAddr, time::Duration};
+use std::net::SocketAddr;
 
-use axum::extract::FromRequestParts;
-use axum::extract::State;
-use axum::http::request::Parts;
-use axum::http::HeaderName;
-use axum::http::StatusCode;
-use axum::routing::put;
 use axum::{routing::get, Router};
-use sqlx::migrate;
-use sqlx::postgres::{PgPool, PgPoolOptions};
-use sqlx::sqlite::SqlitePoolOptions;
-use tokio::net::TcpListener;
-use tower::ServiceBuilder;
-use tower_http::compression::CompressionLayer;
-use tower_http::trace::TraceLayer;
-use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::routes::health_check;

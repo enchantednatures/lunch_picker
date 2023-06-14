@@ -1,6 +1,4 @@
-use axum::response::IntoResponse;
 use axum::Json;
-use serde_json::json;
 
 #[derive(serde::Serialize)]
 pub struct Message {

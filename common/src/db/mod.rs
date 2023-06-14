@@ -20,12 +20,11 @@ impl Repository {
     }
 
     pub async fn create_recipe(&self, name: &str) -> Result<i64, sqlx::Error> {
-        let recipe_id = sqlx::query("INSERT INTO recipes (name) VALUES (?)")
+        sqlx::query("INSERT INTO recipes (name) VALUES (?)")
             .bind(name)
             .execute(&self.db_pool)
             .await
-            .map(|res| res.last_insert_rowid());
-        recipe_id
+            .map(|res| res.last_insert_rowid())
     }
 
     pub async fn create_homies_favorite(
@@ -33,14 +32,12 @@ impl Repository {
         homie_id: i64,
         recipe_id: i64,
     ) -> Result<i64, sqlx::Error> {
-        let homies_favorite_id =
-            sqlx::query("INSERT INTO homies_favorites (homie_id, recipe_id) VALUES (?, ?)")
-                .bind(homie_id)
-                .bind(recipe_id)
-                .execute(&self.db_pool)
-                .await
-                .map(|res| res.last_insert_rowid());
-        homies_favorite_id
+        sqlx::query("INSERT INTO homies_favorites (homie_id, recipe_id) VALUES (?, ?)")
+            .bind(homie_id)
+            .bind(recipe_id)
+            .execute(&self.db_pool)
+            .await
+            .map(|res| res.last_insert_rowid())
     }
 
     pub async fn get_homie_by_id(&self, id: i64) -> Result<Homie, sqlx::Error> {
