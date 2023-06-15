@@ -4,10 +4,9 @@ use axum::response::{IntoResponse, Result};
 use axum::Json;
 use serde::Deserialize;
 use serde::Serialize;
-use serde_json::{json, Value};
 use sqlx::SqlitePool;
 
-use utoipa::{IntoParams, ToSchema};
+use utoipa::ToSchema;
 
 #[derive(serde::Serialize)]
 pub struct Message {

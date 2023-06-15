@@ -1,24 +1,14 @@
 #![allow(dead_code)]
 
-use std::collections::HashMap;
 use std::net::SocketAddr;
-use std::sync::Arc;
-use std::sync::RwLock;
 use std::time::Duration;
 
 use anyhow::Result;
 use axum::error_handling::HandleErrorLayer;
 use axum::http::StatusCode;
 use axum::routing::get;
-use axum::routing::put;
+use axum::routing::patch;
 use axum::Router;
-use axum::{
-    extract::{Path, Query, State},
-    response::IntoResponse,
-    routing::patch,
-    Json,
-};
-use serde::{Deserialize, Serialize};
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::{migrate, SqlitePool};
 use tokio::time::error::Elapsed;
