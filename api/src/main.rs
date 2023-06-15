@@ -1,16 +1,74 @@
 #![allow(dead_code)]
 
+use std::collections::HashMap;
 use std::net::SocketAddr;
+use std::sync::Arc;
+use std::sync::RwLock;
+use std::time::Duration;
 
-use axum::{routing::get, Router};
+use anyhow::Result;
+use axum::error_handling::HandleErrorLayer;
+use axum::http::StatusCode;
+use axum::routing::get;
+use axum::routing::put;
+use axum::Router;
+use axum::{
+    extract::{Path, Query, State},
+    response::IntoResponse,
+    routing::patch,
+    Json,
+};
+use serde::{Deserialize, Serialize};
+use sqlx::sqlite::SqlitePoolOptions;
+use sqlx::{migrate, SqlitePool};
+use tokio::time::error::Elapsed;
+use tower::{BoxError, ServiceBuilder};
+use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use crate::routes::health_check;
+use utoipa::{
+    openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
+    Modify, OpenApi,
+};
+use utoipa_swagger_ui::SwaggerUi;
+
+use crate::routes::{get_homies, health_check, put_homie};
 
 mod routes;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
+    #[derive(OpenApi)]
+    #[openapi(
+    paths(
+    crate::routes::get_homies,
+    crate::routes::put_homie,
+    crate::routes::health_check
+    ),
+    components(
+    schemas(routes::CreateHomieRequest, routes::CreateHomieResponse)
+    ),
+    modifiers(& SecurityAddon),
+    tags(
+    (name = "shitty lunch picker", description = "Shitty lunch picker management API")
+    )
+    )]
+    struct ApiDoc;
+
+    struct SecurityAddon;
+
+    impl Modify for SecurityAddon {
+        fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+            if let Some(components) = openapi.components.as_mut() {
+                components.add_security_scheme(
+                    "api_key",
+                    SecurityScheme::ApiKey(ApiKey::Header(ApiKeyValue::new("todo_apikey"))),
+                )
+            }
+        }
+    }
+    let db_url =
+        std::env::var("DATABASE_URL").unwrap_or_else(|_| "./shitty_lunch_picker.db".into());
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
@@ -18,15 +76,52 @@ async fn main() {
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
+    // let pool = SqlitePoolOptions::new()
+    //     .max_connections(5)
+    //     .connect(&db_url)
+    //     .await?;
+
+    let pool: SqlitePool = SqlitePoolOptions::new()
+        .max_connections(5)
+        .connect(&db_url)
+        .await?;
+
+    migrate!("./../migrations").run(&pool).await?;
 
     // build our application with some routes
-    let app = Router::new().route("/health_check", get(health_check));
+    let app = Router::new()
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
+        .route("/health_check", get(health_check))
+        .route("/homies", get(get_homies).put(put_homie))
+        .route(
+            "/homies/:id",
+            patch(|| async { "patch" }).delete(|| async { "delete" }),
+        )
+        .route("/recipes", get(get_homies).put(put_homie))
+        .layer(
+            ServiceBuilder::new()
+                .layer(HandleErrorLayer::new(|error: BoxError| async move {
+                    if error.is::<Elapsed>() {
+                        Ok(StatusCode::REQUEST_TIMEOUT)
+                    } else {
+                        Err((
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            format!("Unhandled internal error: {}", error),
+                        ))
+                    }
+                }))
+                .timeout(Duration::from_secs(10))
+                .layer(TraceLayer::new_for_http())
+                .into_inner(),
+        )
+        .with_state(pool);
 
     // run it with hyper
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 6969));
     tracing::debug!("listening on {}", addr);
     axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .await
         .unwrap();
+    Ok(())
 }

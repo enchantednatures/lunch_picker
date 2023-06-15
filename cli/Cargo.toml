@@ -6,11 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "4.3.1", features = ["derive"] }
 sqlx = { version = "0.6.3", features = ["postgres", "sqlite", "runtime-tokio-rustls", "macros", "offline", "chrono", "uuid"] }
 rand = "0.8.4"
 dialoguer = "0.10.4"
-dotenv = "0.15.0"
 serde = { version = "1.0.163", features = ["derive"] }
 serde_json = { version = "1.0.96" }
 tokio = { version = "1.28.2", features = ["full"] }
