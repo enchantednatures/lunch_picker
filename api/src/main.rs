@@ -15,14 +15,16 @@ use tokio::time::error::Elapsed;
 use tower::{BoxError, ServiceBuilder};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
 use utoipa::{
     openapi::security::{ApiKey, ApiKeyValue, SecurityScheme},
     Modify, OpenApi,
 };
 use utoipa_swagger_ui::SwaggerUi;
 
-use crate::routes::{get_homies, health_check, put_homie};
+use routes::health;
+use routes::health::health_check;
+use routes::homies;
+use routes::homies::{get_homies, put_homie};
 
 mod routes;
 
@@ -31,12 +33,12 @@ async fn main() -> Result<()> {
     #[derive(OpenApi)]
     #[openapi(
     paths(
-    crate::routes::get_homies,
-    crate::routes::put_homie,
-    crate::routes::health_check
+    homies::get_homies,
+    homies::put_homie,
+    health::health_check
     ),
     components(
-    schemas(routes::CreateHomieRequest, routes::CreateHomieResponse)
+    schemas(homies::CreateHomieRequest, homies::CreateHomieResponse)
     ),
     modifiers(& SecurityAddon),
     tags(
