@@ -1,0 +1,146 @@
+openapi: 3.0.3
+info:
+  version: "1.0.0"
+  title: "Homies and Restaurants API"
+servers:
+  - url: "https://api.homiesrestaurants.com/v1"
+paths:
+  /homies:
+    post:
+      summary: "Create a new Homie"
+      operationId: "createHomie"
+      security:
+        - adminAuth: [ ]
+      requestBody:
+        description: "Details of the new Homie"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Homie"
+      responses:
+        200:
+          description: "Homie successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Homie"
+        403:
+          description: "Only admin users can create Homies"
+
+  /homies/{homieId}:
+    get:
+      summary: "Fetch a Homie by ID"
+      operationId: "getHomie"
+      security:
+        - homieAuth: [ ]
+      parameters:
+        - name: "homieId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "Successfully fetched Homie"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Homie"
+        404:
+          description: "Homie not found"
+  /restaurants:
+    post:
+      summary: "Create a new Restaurant"
+      operationId: "createRestaurant"
+      security:
+        - homieAuth: [ ]
+      requestBody:
+        description: "Details of the new Restaurant"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Restaurant"
+      responses:
+        200:
+          description: "Restaurant successfully created"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Restaurant"
+  /homies/{homieId}/favorites:
+    post:
+      summary: "Add a Restaurant to a Homie's favorites"
+      operationId: "addFavorite"
+      security:
+        - homieAuth: [ ]
+      parameters:
+        - name: "homieId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      requestBody:
+        description: "ID of the Restaurant to add to favorites"
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "object"
+              properties:
+                restaurantId:
+                  type: "string"
+      responses:
+        200:
+          description: "Restaurant successfully added to favorites"
+  /restaurants/{restaurantId}:
+    get:
+      summary: "Fetch a Restaurant by ID"
+      operationId: "getRestaurant"
+      security:
+        - homieAuth: [ ]
+      parameters:
+        - name: "restaurantId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        200:
+          description: "Successfully fetched Restaurant"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Restaurant"
+        404:
+          description: "Restaurant not found"
+
+components:
+  schemas:
+    Homie:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+        name:
+          type: "string"
+    Restaurant:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+        name:
+          type: "string"
+        visibility:
+          type: "string"
+          enum: [ "public", "private" ]
+  securitySchemes:
+    adminAuth:
+      type: "http"
+      scheme: "bearer"
+      bearerFormat: "JWT"
+    homieAuth:
+      type: "http"
+      scheme: "bearer"
+      bearerFormat: "JWT"

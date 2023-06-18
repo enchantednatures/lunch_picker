@@ -37,13 +37,9 @@ async fn main() -> Result<()> {
     homies::put_homie,
     health::health_check
     ),
-    components(
-    schemas(homies::CreateHomieRequest, homies::CreateHomieResponse)
-    ),
+    components(schemas(homies::CreateHomieRequest, homies::CreateHomieResponse)),
     modifiers(& SecurityAddon),
-    tags(
-    (name = "shitty lunch picker", description = "Shitty lunch picker management API")
-    )
+    tags((name = "shitty lunch picker", description = "Shitty lunch picker management API"))
     )]
     struct ApiDoc;
 

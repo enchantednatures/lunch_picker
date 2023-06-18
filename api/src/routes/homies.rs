@@ -1,10 +1,12 @@
-use axum::extract::State;
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::{response, Json};
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 use utoipa::ToSchema;
+
+use common::Homie;
 
 use crate::routes;
 
@@ -25,14 +27,7 @@ pub struct CreateHomieResponse {
     pub name: String,
 }
 
-#[utoipa::path(
-put,
-path = "/homies",
-responses(
-(status = 200, description = "Create a homie", body = CreateHomieResponse),
-(status = NOT_FOUND, description = "Pet was not found")
-)
-)]
+#[utoipa::path(put, path = "/homies", responses((status = 200, description = "Create a homie", body = CreateHomieResponse), (status = NOT_FOUND, description = "Pet was not found")))]
 pub async fn put_homie(
     State(db_pool): State<SqlitePool>,
     Json(payload): Json<CreateHomieRequest>,
@@ -53,12 +48,35 @@ pub async fn put_homie(
     (StatusCode::CREATED, Json(homie))
 }
 
+#[utoipa::path(put, path = "/homies/{homie_id}/", responses((status = 200, description = "Create a homie", body = CreateHomieResponse), (status = NOT_FOUND, description = "Pet was not found")))]
+pub async fn patch_homie(
+    State(db_pool): State<SqlitePool>,
+    Path(homie_id): Path<i64>,
+    Json(payload): Json<CreateHomieRequest>,
+) -> impl IntoResponse {
+    sqlx::query(
+        r#"
+        UPDATE homies
+        SET name = ?
+        WHERE id = ?
+        "#,
+    )
+    .bind(payload.name)
+    .bind(homie_id)
+    .execute(&db_pool)
+    .await
+    .unwrap();
+
+    (
+        StatusCode::ACCEPTED,
+        Json(Homie::new(homie_id, payload.name)),
+    )
+}
+
 #[utoipa::path(
 get,
 path = "/homies",
-responses(
-(status = 200, description = "Get all", body = [CreateHomieResponse]),
-)
+responses((status = 200, description = "Get all", body = [CreateHomieResponse]))
 )]
 pub async fn get_homies(
     State(db_pool): State<SqlitePool>,

@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 
+use anyhow::Result;
 use sqlx::{query_file, query_file_as, Pool, Sqlite, SqlitePool};
 
 pub use domain::*;
@@ -32,21 +33,21 @@ pub async fn get_most_favorited_recipes(homies_favorites: &[HomiesFavorite]) -> 
     most_favorited_recipes
 }
 
-pub async fn add_homie(db_pool: &SqlitePool, name: &str) -> Result<(), sqlx::Error> {
+pub async fn add_homie(db_pool: &SqlitePool, name: &str) -> Result<()> {
     query_file!("src/sql/insert_homie.sql", name)
         .execute(db_pool)
         .await?;
     Ok(())
 }
 
-pub async fn get_all_homies(db_pool: &SqlitePool) -> Result<Vec<Homie>, sqlx::Error> {
+pub async fn get_all_homies(db_pool: &SqlitePool) -> Result<Vec<Homie>> {
     let homies = query_file_as!(Homie, "src/sql/get_all_homies.sql")
         .fetch_all(db_pool)
         .await?;
     Ok(homies)
 }
 
-async fn get_recent_meals(db_pool: &SqlitePool) -> Result<Vec<RecentMeal>, sqlx::Error> {
+async fn get_recent_meals(db_pool: &SqlitePool) -> Result<Vec<RecentMeal>> {
     let recent_meals = sqlx::query_as!(
         RecentMeal,
         r#"
