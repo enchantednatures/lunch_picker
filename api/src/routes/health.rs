@@ -24,11 +24,11 @@ impl HealthStatus {
 }
 
 #[utoipa::path(
-get,
-path = "/health_check",
-responses(
-(status = 200, description = "Check health", body = HealthStatus),
-)
+    get,
+    path = "/health_check",
+    responses(
+        (status = 200, description = "Check health", body = HealthStatus),
+    )
 )]
 pub async fn health_check() -> response::Result<impl IntoResponse, (StatusCode, String)> {
     Ok(Json(HealthStatus::new()))
