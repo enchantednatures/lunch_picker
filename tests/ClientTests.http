@@ -1,0 +1,55 @@
+GET {{url}}/
+Accept: application/json
+
+
+###
+GET {{url}}/health_check
+Accept: application/json
+
+###
+PUT {{url}}/create_recipe
+Content-Type: application/json
+Accept: */*
+Accept-Encoding: */*
+
+{
+  "name": "tacos"
+}
+
+
+###
+GET {{url}}/homies
+Content-Type: application/json
+Accept: */*
+Accept-Encoding: */*
+
+
+###
+PUT {{url}}/homies
+Content-Type: application/json
+Accept: */*
+Accept-Encoding: */*
+
+{
+  "name": "Hunter"
+}
+
+###
+PUT {{url}}/homies
+Content-Type: application/json
+Accept: */*
+Accept-Encoding: */*
+
+{
+  "name": "Sienna"
+}
+
+###
+PATCH {{url}}/homies/1
+Content-Type: application/json
+Accept: */*
+Accept-Encoding: */*
+
+{
+  "name": "Hunter"
+}
