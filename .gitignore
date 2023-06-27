@@ -9,6 +9,8 @@
 /.idea/vcs.xml
 /gooby.db-shm
 /gooby.db-wal
+/shitty_lunch_picker.db-shm
+/shitty_lunch_picker.db-wal
 /.archive/gooby.db
 /cli/target/
 /api/target/
