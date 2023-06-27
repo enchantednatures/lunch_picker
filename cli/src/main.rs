@@ -66,7 +66,7 @@ async fn main() -> Result<()> {
 
     let lunch_decider = LunchDecider::new(&pool);
     if !is_setup {
-        let setup_result = lunch_decider.setup().await;
+        let _setup_result = lunch_decider.setup().await;
     }
 
     let homies = get_all_homies(&pool).await?;
