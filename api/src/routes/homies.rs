@@ -61,7 +61,7 @@ pub async fn patch_homie(
         WHERE id = ?
         "#,
     )
-    .bind(payload.name)
+    .bind(&payload.name)
     .bind(homie_id)
     .execute(&db_pool)
     .await
