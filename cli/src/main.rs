@@ -1,14 +1,15 @@
 #![allow(dead_code)]
 
-use std::error::Error;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
 
+use anyhow::Result;
 use dialoguer::Input;
 use rand::prelude::SliceRandom;
-use sqlx::{ migrate, SqlitePool};
 use sqlx::sqlite::SqlitePoolOptions;
+use sqlx::{migrate, SqlitePool};
+
 use cli::setup;
 use common::domain::HomiesFavorite;
 use common::{
@@ -22,11 +23,9 @@ struct LunchDecider<'a> {
 
 impl<'a> LunchDecider<'a> {
     fn new(pool: &'a SqlitePool) -> Self {
-        LunchDecider {
-            pool
-        }
+        LunchDecider { pool }
     }
-    async fn setup(&self) -> Result<(), Box<dyn Error>> {
+    async fn setup(&self) -> Result<()> {
         migrate!("./../migrations").run(self.pool).await?;
         setup(self.pool).await;
         Ok(())
@@ -34,7 +33,7 @@ impl<'a> LunchDecider<'a> {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<()> {
     let mut is_setup = false;
 
     let mut db_url = String::new();
@@ -68,13 +67,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let lunch_decider = LunchDecider::new(&pool);
     if !is_setup {
         let setup_result = lunch_decider.setup().await;
-        match setup_result {
-            Ok(_) => println!("Setup complete"),
-            Err(e) => {
-                println!("Setup failed: {:?}", e);
-                return Err("Setup failed");
-            }
-        }
     }
 
     let homies = get_all_homies(&pool).await?;
