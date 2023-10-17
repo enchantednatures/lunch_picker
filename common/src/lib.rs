@@ -12,6 +12,7 @@ pub mod domain;
 
 pub async fn get_most_favorited_recipes(homies_favorites: &[HomiesFavorite]) -> Vec<&i64> {
     let mut recipe_counts = HashMap::<&i64, u32>::new();
+    recipe_counts.entry(2).
     for homies_favorite in homies_favorites.iter() {
         let recipe = &homies_favorite.recipe_id;
         let count = recipe_counts.entry(recipe).or_insert(0);

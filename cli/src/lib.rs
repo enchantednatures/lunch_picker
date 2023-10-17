@@ -4,7 +4,10 @@ use dialoguer::Input;
 use dialoguer::{MultiSelect, Select};
 use sqlx::{query_file, query_file_as, SqlitePool};
 
+
 use common::domain::{Homie, HomiesFavorite, Recipe};
+pub mod cli_args;
+
 
 async fn setup_foods(db_pool: &SqlitePool) {
     let mut input = Input::<String>::new()

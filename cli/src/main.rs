@@ -5,12 +5,14 @@ use std::fs::File;
 use std::io::Write;
 
 use anyhow::Result;
+use clap::Parser;
 use dialoguer::Input;
 use rand::prelude::SliceRandom;
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::{migrate, SqlitePool};
 
 use cli::setup;
+use cli::cli_args::CliArgs;
 use common::domain::HomiesFavorite;
 use common::{
     check_if_file_exists, get_all_homies, get_favorites_for_home_homie, get_most_favorited_recipes,
@@ -34,6 +36,11 @@ impl<'a> LunchDecider<'a> {
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    let args = CliArgs::parse();
+    dbg!(&args);
+
+
+
     let mut is_setup = false;
 
     let mut db_url = String::new();
