@@ -3,16 +3,19 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use sqlx::{query_file, query_file_as, Pool, Sqlite, SqlitePool};
+use sqlx::{query, query_file, query_file_as, Pool, Sqlite, SqlitePool};
 
 pub use domain::*;
 
 pub mod db;
 pub mod domain;
+pub mod routes;
+pub mod cli_setup;
+pub mod cli_args;
 
 pub async fn get_most_favorited_recipes(homies_favorites: &[HomiesFavorite]) -> Vec<&i64> {
     let mut recipe_counts = HashMap::<&i64, u32>::new();
-    recipe_counts.entry(2).
+    recipe_counts.entry(&2);
     for homies_favorite in homies_favorites.iter() {
         let recipe = &homies_favorite.recipe_id;
         let count = recipe_counts.entry(recipe).or_insert(0);
@@ -35,14 +38,17 @@ pub async fn get_most_favorited_recipes(homies_favorites: &[HomiesFavorite]) -> 
 }
 
 pub async fn add_homie(db_pool: &SqlitePool, name: &str) -> Result<()> {
-    query_file!("src/sql/insert_homie.sql", name)
+    query!(
+    r#" INSERT INTO homies (name) 
+        VALUES ($1)
+    "#, name )
         .execute(db_pool)
         .await?;
     Ok(())
 }
 
 pub async fn get_all_homies(db_pool: &SqlitePool) -> Result<Vec<Homie>> {
-    let homies = query_file_as!(Homie, "src/sql/get_all_homies.sql")
+    let homies = query_file_as!(Homie, "sql/get_all_homies.sql")
         .fetch_all(db_pool)
         .await?;
     Ok(homies)
@@ -64,7 +70,7 @@ async fn get_recent_meals(db_pool: &SqlitePool) -> Result<Vec<RecentMeal>> {
 }
 
 pub async fn get_all_recipes(db_pool: &SqlitePool) -> Vec<Recipe> {
-    let recipes = query_file_as!(Recipe, "src/sql/get_all_recipes.sql")
+    let recipes = query_file_as!(Recipe, "sql/get_all_recipes.sql")
         .fetch_all(db_pool)
         .await
         .unwrap();
@@ -73,7 +79,7 @@ pub async fn get_all_recipes(db_pool: &SqlitePool) -> Vec<Recipe> {
 }
 
 pub async fn add_recipe(db_pool: &SqlitePool, name: &str) -> Result<(), sqlx::Error> {
-    query_file!("src/sql/insert_recipe.sql", name)
+    query_file!("sql/insert_recipe.sql", name)
         .execute(db_pool)
         .await?;
     Ok(())
@@ -85,7 +91,7 @@ pub async fn get_favorites_for_home_homie(
 ) -> Result<Vec<HomiesFavorite>, sqlx::Error> {
     let homie_id = homie.id;
     let homies_favorites =
-        query_file_as!(HomiesFavorite, "src/sql/get_homies_favorites.sql", homie_id)
+        query_file_as!(HomiesFavorite, "sql/get_homies_favorites.sql", homie_id)
             .fetch_all(db_pool)
             .await?;
     Ok(homies_favorites)
