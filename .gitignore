@@ -7,6 +7,6 @@
 /.idea/saveactions_settings.xml
 /.idea/shitty_lunch_picker.iml
 /.idea/vcs.xml
-/gooby.db-shm
-/gooby.db-wal
-/gooby.db
+/lunch.db-shm
+/lunch.db-wal
+/lunch.db
