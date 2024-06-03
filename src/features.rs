@@ -1,7 +1,7 @@
 pub mod create_homie;
 pub mod create_recipe;
-mod get_homie_by_name;
-mod get_all_homies;
+pub mod get_all_homies;
+pub mod get_homie_by_name;
 pub mod read_homie {}
 pub mod update_homie {}
 pub mod delete_homie {}

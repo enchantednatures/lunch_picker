@@ -4,12 +4,13 @@ use std::fmt::Formatter;
 use std::fmt::{self};
 
 use sqlx::Pool;
-use sqlx::Sqlite;
+use sqlx::Postgres;
 
+use crate::models::Homie;
 use crate::validator::Validator;
 
 #[tracing::instrument(name = "Getting Homie by Name", skip(db))]
-pub async fn get_homie(homie_name: String, db: &Pool<Sqlite>) -> Result<Homie, GetHomieError> {
+pub async fn get_homie(homie_name: String, db: &Pool<Postgres>) -> Result<Homie, GetHomieError> {
     let homie: GetHomieParams = homie_name.into();
     homie.validate()?;
     let retrieved_homie = db.get_homie(homie).await?;
@@ -80,21 +81,16 @@ impl Validator for GetHomieParams {
     }
 }
 
-#[derive(Debug)]
-pub struct Homie {
-    pub id: i64,
-    pub name: String,
-}
 
 trait GetHomie {
     async fn get_homie(&self, params: GetHomieParams) -> Result<Homie, GetHomieDbError>;
 }
 
-impl GetHomie for Pool<Sqlite> {
+impl GetHomie for Pool<Postgres> {
     async fn get_homie(&self, params: GetHomieParams) -> Result<Homie, GetHomieDbError> {
         let homie = sqlx::query_as!(
             Homie,
-            r#"SELECT id, name FROM homies WHERE name = ?"#,
+            r#"SELECT id, name FROM homies WHERE name = $1"#,
             params.name
         )
         .fetch_one(self)

@@ -4,104 +4,98 @@ use std::fmt::Formatter;
 use std::fmt::{self};
 
 use sqlx::Pool;
-use sqlx::Sqlite;
+use sqlx::Postgres;
 
+use crate::models::Homie;
 use crate::validator::Validator;
 
 #[tracing::instrument(name = "Getting all Homies", skip(db))]
-pub async fn get_all_homies(homie_name: String, db: &Pool<Sqlite>) -> Result<Homie, GetHomieError> {
-    let homie: GetHomieParams = homie_name.into();
-    homie.validate()?;
-    let retrieved_homie = db.get_homie(homie).await?;
+pub async fn get_all_homies(db: &Pool<Postgres>, user_id: i32) -> Result<Vec<Homie>, GetAllHomiesError> {
+    let retrieved_homies = db.get_all_homies(user_id.into()).await?;
 
-    Ok(retrieved_homie)
+    Ok(retrieved_homies)
 }
-impl Error for GetHomieError {}
-struct GetHomieParams {
-    name: String,
+impl Error for GetAllHomiesError {}
+struct GetAllHomiesParams {
+    user_id: i32,
 }
-impl GetHomieParams {
-    fn new(name: String) -> Self {
-        Self { name }
+impl GetAllHomiesParams {
+    fn new(user_id: i32) -> Self {
+        Self { user_id }
     }
 }
-impl From<String> for GetHomieParams {
-    fn from(name: String) -> Self {
-        Self::new(name)
+impl From<i32> for GetAllHomiesParams {
+    fn from(user_id: i32) -> Self {
+        Self::new(user_id)
     }
 }
 
-enum GetHomieParamsError {
+enum GetAllHomiesParamsError {
     InvalidName,
 }
 
-enum GetHomieDbError {
+enum GetAllHomiesDbError {
     HomieNotFound { name: String },
 }
 
 #[derive(Debug)]
-pub enum GetHomieError {
+pub enum GetAllHomiesError {
     InvalidName,
     HomieNotFound { name: String },
 }
 
-impl Display for GetHomieError {
+impl Display for GetAllHomiesError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            GetHomieError::InvalidName => write!(f, "Invalid name"),
-            GetHomieError::HomieNotFound { name } => write!(f, "Homie not found {}", name),
+            GetAllHomiesError::InvalidName => write!(f, "Invalid name"),
+            GetAllHomiesError::HomieNotFound { name } => write!(f, "Homie not found {}", name),
         }
     }
 }
 
-impl From<GetHomieDbError> for GetHomieError {
-    fn from(value: GetHomieDbError) -> Self {
+impl From<GetAllHomiesDbError> for GetAllHomiesError {
+    fn from(value: GetAllHomiesDbError) -> Self {
         match value {
-            GetHomieDbError::HomieNotFound { name } => GetHomieError::HomieNotFound { name },
+            GetAllHomiesDbError::HomieNotFound { name } => GetAllHomiesError::HomieNotFound { name },
         }
     }
 }
-impl From<GetHomieParamsError> for GetHomieError {
-    fn from(value: GetHomieParamsError) -> Self {
+impl From<GetAllHomiesParamsError> for GetAllHomiesError {
+    fn from(value: GetAllHomiesParamsError) -> Self {
         match value {
-            GetHomieParamsError::InvalidName => GetHomieError::InvalidName,
+            GetAllHomiesParamsError::InvalidName => GetAllHomiesError::InvalidName,
         }
     }
 }
 
-impl Validator for GetHomieParams {
-    type E = GetHomieParamsError;
+impl Validator for GetAllHomiesParams {
+    type E = GetAllHomiesParamsError;
 
     fn validate(&self) -> Result<(), Self::E> {
-        match self.name.is_empty() {
-            true => return Err(GetHomieParamsError::InvalidName),
+        match self.user_id == 0 {
+            true => return Err(GetAllHomiesParamsError::InvalidName),
             false => return Ok(()),
         }
     }
 }
 
-#[derive(Debug)]
-pub struct Homie {
-    pub id: i64,
-    pub name: String,
+
+trait GetAllHomies {
+    async fn get_all_homies(&self, params: GetAllHomiesParams) -> Result<Vec<Homie>, GetAllHomiesDbError>;
 }
 
-trait GetHomie {
-    async fn get_homie(&self, params: GetHomieParams) -> Result<Homie, GetHomieDbError>;
-}
-
-impl GetHomie for Pool<Sqlite> {
-    async fn get_homie(&self, params: GetHomieParams) -> Result<Homie, GetHomieDbError> {
+impl GetAllHomies for Pool<Postgres> {
+    async fn get_all_homies(&self, params: GetAllHomiesParams) -> Result<Vec<Homie>, GetAllHomiesDbError> {
         let homie = sqlx::query_as!(
             Homie,
-            r#"SELECT id, name FROM homies WHERE name = ?"#,
-            params.name
+            r#"select id, name from homies where user_id = $1"#,
+            params.user_id
         )
-        .fetch_one(self)
+        .fetch_all(self)
         .await
-        .map_err(|e| -> GetHomieDbError {
+        .map_err(|e| -> GetAllHomiesDbError {
             println!("Error: {:?}", e);
-            GetHomieDbError::HomieNotFound { name: params.name }
+            GetAllHomiesDbError::HomieNotFound { name: "unknown".into() }
         })?;
         Ok(homie)
     }

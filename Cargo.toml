@@ -20,5 +20,5 @@ tracing-bunyan-formatter = "0.3"
 
 [dependencies.sqlx]
 version = "0.7"
-features = ["sqlite", "runtime-tokio-rustls", "macros", "chrono", "uuid"]
+features = ["postgres", "runtime-tokio-rustls", "macros", "chrono", "uuid"]
 

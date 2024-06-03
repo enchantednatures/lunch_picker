@@ -4,37 +4,41 @@ use std::fmt::Formatter;
 use std::fmt::{self};
 
 use sqlx::Pool;
-use sqlx::Sqlite;
-use tracing::info;
+use sqlx::Postgres;
+use tracing::Instrument;
 
+use crate::models::Homie;
+use crate::user::UserId;
 use crate::validator::Validator;
 
-#[tracing::instrument]
+#[tracing::instrument(skip(db))]
 pub async fn create_homie(
     homie_name: String,
-    db: &Pool<Sqlite>,
+    user_id: UserId,
+    db: &Pool<Postgres>,
 ) -> Result<Homie, CreateHomieError> {
-    info!("Creating homie");
+    let homie = CreateHomieParams::new(user_id, &homie_name);
 
-    let homie: CreateHomieParams = homie_name.into();
     homie.validate()?;
     let created_homie = db.create_homie(homie).await?;
 
     Ok(created_homie)
 }
+
 impl Error for CreateHomieError {}
-struct CreateHomieParams {
-    name: String,
-}
-impl CreateHomieParams {
-    fn new(name: String) -> Self {
-        Self { name }
-    }
+
+#[derive(Debug)]
+struct CreateHomieParams<'a> {
+    user_id: i32,
+    name: &'a str,
 }
 
-impl From<String> for CreateHomieParams {
-    fn from(name: String) -> Self {
-        Self::new(name)
+impl<'a> CreateHomieParams<'a> {
+    fn new(user_id: UserId, name: &'a str) -> Self {
+        Self {
+            user_id: user_id.into(),
+            name,
+        }
     }
 }
 
@@ -43,12 +47,17 @@ enum CreateHomieParamsError {
 }
 
 enum CreateHomieDbError {
+    Unknown,
+    ForeignKeyViolation { constraint: String },
     HomieAlreadyExists,
 }
 
 #[derive(Debug)]
 pub enum CreateHomieError {
+    Unknown,
+    UnknownDbError(String),
     InvalidName,
+    ForeignKeyViolation { constraint: String },
     HomieAlreadyExists,
 }
 
@@ -57,6 +66,11 @@ impl Display for CreateHomieError {
         match self {
             CreateHomieError::InvalidName => write!(f, "Invalid name"),
             CreateHomieError::HomieAlreadyExists => write!(f, "Homie already exists"),
+            CreateHomieError::Unknown => write!(f, "Unknown error"),
+            CreateHomieError::UnknownDbError(e) => write!(f, "Unknown db error: {}", e),
+            CreateHomieError::ForeignKeyViolation { constraint } => {
+                write!(f, "Foreign key violation: {}", constraint)
+            }
         }
     }
 }
@@ -65,6 +79,10 @@ impl From<CreateHomieDbError> for CreateHomieError {
     fn from(value: CreateHomieDbError) -> Self {
         match value {
             CreateHomieDbError::HomieAlreadyExists => CreateHomieError::HomieAlreadyExists,
+            CreateHomieDbError::Unknown => CreateHomieError::Unknown,
+            CreateHomieDbError::ForeignKeyViolation { constraint } => {
+                CreateHomieError::ForeignKeyViolation { constraint }
+            }
         }
     }
 }
@@ -76,62 +94,57 @@ impl From<CreateHomieParamsError> for CreateHomieError {
     }
 }
 
-impl Validator for CreateHomieParams {
+impl Validator for CreateHomieParams<'_> {
     type E = CreateHomieParamsError;
 
+    #[tracing::instrument(skip(self))]
     fn validate(&self) -> Result<(), Self::E> {
         match self.name.is_empty() {
-            true => return Err(CreateHomieParamsError::InvalidName),
-            false => return Ok(()),
+            true => Err(CreateHomieParamsError::InvalidName),
+            false => Ok(()),
         }
     }
 }
 
-#[derive(Debug)]
-pub struct Homie {
-    pub id: i64,
-    pub name: String,
-}
 
 trait CreateHomie {
-    async fn create_homie(&self, params: CreateHomieParams) -> Result<Homie, CreateHomieDbError>;
+    async fn create_homie<'a>(
+        &self,
+        params: CreateHomieParams<'a>,
+    ) -> Result<Homie, CreateHomieDbError>;
 }
 
-impl CreateHomie for Pool<Sqlite> {
-    async fn create_homie(&self, params: CreateHomieParams) -> Result<Homie, CreateHomieDbError> {
+impl CreateHomie for Pool<Postgres> {
+
+    #[tracing::instrument(skip(self, params))]
+    async fn create_homie<'a>(
+        &self,
+        params: CreateHomieParams<'a>,
+    ) -> Result<Homie, CreateHomieDbError> {
         let homie = sqlx::query_as!(
             Homie,
-            r#"INSERT INTO homies (name) VALUES (?) RETURNING id, name"#,
+            r#"INSERT INTO homies (user_id, name) VALUES ($1, $2) RETURNING id, name"#,
+            params.user_id,
             params.name
         )
         .fetch_one(self)
+        .instrument(tracing::info_span!("create_homie_db_query"))
         .await
-        .map_err(|e| {
-            println!("Error: {:?}", e);
-            match e {
-                sqlx::Error::Configuration(_) => todo!(),
-                sqlx::Error::Database(db_error) => {
-                    if db_error.is_unique_violation() {
-                        return CreateHomieDbError::HomieAlreadyExists;
-                    }
-                    todo!()
+        .map_err(|e| match e {
+            sqlx::Error::Database(db_error) => {
+                if db_error.is_unique_violation() {
+                    return CreateHomieDbError::HomieAlreadyExists;
+                } else if db_error.is_foreign_key_violation() {
+                    return CreateHomieDbError::ForeignKeyViolation {
+                        constraint: db_error
+                            .constraint()
+                            .expect("Constraint should be named if it is a ForeignKeyViolation")
+                            .to_string(),
+                    };
                 }
-                sqlx::Error::Io(_) => todo!(),
-                sqlx::Error::Tls(_) => todo!(),
-                sqlx::Error::Protocol(_) => todo!(),
-                sqlx::Error::RowNotFound => todo!(),
-                sqlx::Error::TypeNotFound { type_name } => todo!(),
-                sqlx::Error::ColumnIndexOutOfBounds { index, len } => todo!(),
-                sqlx::Error::ColumnNotFound(_) => todo!(),
-                sqlx::Error::ColumnDecode { index, source } => todo!(),
-                sqlx::Error::Decode(_) => todo!(),
-                sqlx::Error::AnyDriverError(_) => todo!(),
-                sqlx::Error::PoolTimedOut => todo!(),
-                sqlx::Error::PoolClosed => todo!(),
-                sqlx::Error::WorkerCrashed => todo!(),
-                sqlx::Error::Migrate(_) => todo!(),
-                _ => CreateHomieDbError::HomieAlreadyExists,
+                CreateHomieDbError::Unknown
             }
+            _ => CreateHomieDbError::Unknown,
         })?;
         Ok(homie)
     }

@@ -58,8 +58,8 @@ pub enum Recipes {
     #[clap(visible_alias = "a")]
     Add {
         /// Name of recipie
-        #[clap(name = "recipie name", value_parser)]
-        recipes_name: String,
+        #[clap(name = "recipe name", value_parser)]
+        recipe_name: String,
     },
 
     /// Delete a recipie
@@ -67,7 +67,7 @@ pub enum Recipes {
     Delete {
         /// name of recipie to delete
         #[clap(short, value_parser)]
-        recipes_name: String,
+        recipe_name: String,
     },
 
     /// Rename a recipie
@@ -75,7 +75,7 @@ pub enum Recipes {
     Rename {
         /// name of recipie
         #[clap(short, value_parser)]
-        recipes_name: String,
+        recipe_name: String,
         /// new name
         #[clap(short, value_parser)]
         updated_name: String,
