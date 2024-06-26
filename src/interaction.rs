@@ -1,9 +1,6 @@
-use dialoguer::Input;
 use dialoguer::MultiSelect;
-use dialoguer::Select;
 
-use crate::cli_args::Command;
-use crate::models::Homie;
+use crate::features::Homie;
 
 pub fn get_home_homies(homies: &[Homie]) -> Vec<&Homie> {
     let homies_names = homies

@@ -5,5 +5,3 @@ pub mod db;
 pub mod features;
 pub mod interaction;
 pub mod user;
-pub mod validator;
-pub mod models;

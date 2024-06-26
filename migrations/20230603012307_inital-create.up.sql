@@ -1,6 +1,9 @@
+create domain name name default null constraint name_not_empty check (
+    length(value) > 0 and length(trim(value)) = length(value)
+);
 create table users
 (
-    id serial primary key,
+    id integer primary key,
     created_at timestamp not null default current_timestamp,
     updated_at timestamp not null default current_timestamp
 );
@@ -9,9 +12,10 @@ create table recipes
 (
     id serial primary key,
     user_id integer not null,
-    name varchar(255) not null,
+    name name not null,
     created_at timestamp not null default current_timestamp,
-    updated_at timestamp not null default current_timestamp
+    updated_at timestamp not null default current_timestamp,
+    foreign key (user_id) references users (id)
 );
 
 create unique index recipes_name_uindex on recipes (user_id, name);
@@ -20,9 +24,10 @@ create table restaurants
 (
     id serial primary key,
     user_id integer not null,
-    name varchar(255) not null,
+    name name not null,
     created_at timestamp not null default current_timestamp,
-    updated_at timestamp not null default current_timestamp
+    updated_at timestamp not null default current_timestamp,
+    foreign key (user_id) references users (id)
 );
 
 create unique index restaurant_name_uindex on restaurants (user_id, name);
@@ -31,14 +36,16 @@ create table recent_meals
 (
     id serial primary key,
     user_id integer not null,
-    name varchar(255) not null,
-    created_at timestamp not null default current_timestamp
+    name name not null,
+    created_at timestamp not null default current_timestamp,
+    foreign key (user_id) references users (id)
 );
 create table homies
 (
     id serial primary key,
     user_id integer not null,
-    name varchar(255) not null
+    name name not null,
+    foreign key (user_id) references users (id)
 );
 
 create unique index homies_name_uindex on homies (user_id, name);
@@ -47,9 +54,7 @@ create table homies_favorite_recipes
 (
     homie_id integer not null,
     recipe_id integer not null,
-    primary key (homie_id, recipe_id),
-    foreign key (homie_id) references homies (id),
-    foreign key (recipe_id) references recipes (id)
+    primary key (homie_id, recipe_id)
 );
 
 create table homies_favorite_restaurants
@@ -80,7 +85,7 @@ create type measure as enum (
 create table ingredients
 (
     id serial primary key,
-    name varchar(255) not null,
+    name name not null,
     created_at timestamp not null default current_timestamp,
     updated_at timestamp not null default current_timestamp
 );
@@ -109,7 +114,8 @@ create table shopping_cart
     updated_at timestamp not null default current_timestamp,
     primary key (user_id, ingredient_id),
     foreign key (user_id) references users (id),
-    foreign key (ingredient_id) references ingredients (id)
+    foreign key (ingredient_id) references ingredients (id),
+    foreign key (user_id) references users (id)
 );
 
 
@@ -125,3 +131,5 @@ create table pantry_ingredients
     foreign key (user_id) references users (id),
     foreign key (ingredient_id) references ingredients (id)
 );
+insert into users (id)
+values (1);

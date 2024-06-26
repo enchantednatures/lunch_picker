@@ -3,15 +3,19 @@
 use anyhow::Result;
 use clap::Parser;
 use dialoguer::MultiSelect;
+use lunch_picker::cli_args::AddRestaurant;
 use lunch_picker::cli_args::CliArgs;
 use lunch_picker::cli_args::Command;
 use lunch_picker::cli_args::Homies;
 use lunch_picker::cli_args::Recipes;
+use lunch_picker::cli_args::Restaurants;
 use lunch_picker::db::Migrator;
-use lunch_picker::features::create_homie::create_homie;
-use lunch_picker::features::create_recipe::create_recipe;
-use  lunch_picker::features::get_all_homies::get_all_homies;
-use lunch_picker::models::Homie;
+use lunch_picker::features::add_homies_favorite_restaurant;
+use lunch_picker::features::create_homie;
+use lunch_picker::features::create_recipe;
+use lunch_picker::features::create_restaurant;
+use lunch_picker::features::get_all_homies;
+use lunch_picker::features::Homie;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -22,7 +26,7 @@ use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::Registry;
 
-
+const CLI_USER_ID: i32 = 1;
 
 async fn get_home_homies(homies: &[Homie]) -> Vec<&Homie> {
     let homies_names = homies
@@ -47,29 +51,24 @@ async fn get_home_homies(homies: &[Homie]) -> Vec<&Homie> {
 }
 
 struct AppState {
-    db: Pool<Postgres>
+    db: Pool<Postgres>,
 }
 
 impl AppState {
-
     fn new(db: Pool<Postgres>) -> Self {
-        Self {
-            db
-        }
+        Self { db }
     }
 
     async fn work(&self) -> Result<()> {
-        let homies: Vec<Homie> = get_all_homies(&self.db, 1).await?;
+        let homies: Vec<Homie> = get_all_homies(1, &self.db).await?;
         let home_homies = get_home_homies(&homies).await;
         Ok(())
     }
-
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = CliArgs::parse();
-
 
     let subscriber = Registry::default()
         .with(JsonStorageLayer)
@@ -97,7 +96,7 @@ async fn main() -> Result<()> {
             Command::Homies(homie_command) => match homie_command {
                 Homies::Add { homies_name } => {
                     println!("Adding homie {}", homies_name);
-                    _ = create_homie(homies_name, 1.into(), &app_state.db).await?;
+                    _ = create_homie(homies_name, 1, &app_state.db).await?;
                 }
                 Homies::Delete { homies_name } => println!("Deleting homie {}", homies_name),
                 Homies::Rename {
@@ -107,10 +106,36 @@ async fn main() -> Result<()> {
                     "Updating homie {} with new name {}",
                     homies_name, updated_name
                 ),
+                Homies::Restaurants(restaurant_command) => match restaurant_command {
+                    AddRestaurant::Add {
+                        homie_name,
+                        restaurant_name,
+                    } => {
+                        add_homies_favorite_restaurant(
+                            homie_name,
+                            restaurant_name,
+                            1,
+                            &app_state.db,
+                        )
+                        .await?;
+                    }
+                    _ => println!("Restaurant command"),
+                },
+            },
+
+            Command::Restaurants(restaurant_command) => match restaurant_command {
+                Restaurants::Add { restaurant_name } => {
+                    create_restaurant(restaurant_name, CLI_USER_ID, &app_state.db).await?;
+                }
+                Restaurants::Delete { restaurant_name } => todo!(),
+                Restaurants::Rename {
+                    restaurant_name,
+                    updated_name,
+                } => todo!(),
             },
             Command::Recipes(recipe_command) => match recipe_command {
                 Recipes::Add { recipe_name } => {
-                    _ = create_recipe(recipe_name, 1.into(), &app_state.db).await?;
+                    _ = create_recipe(recipe_name, 1, &app_state.db).await?;
                 }
                 _ => println!("Recipe command"),
             },

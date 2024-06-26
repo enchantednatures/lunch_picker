@@ -20,12 +20,15 @@ pub enum Command {
 
     #[command(subcommand)]
     Recipes(Recipes),
+
+    #[command(subcommand)]
+    Restaurants(Restaurants),
 }
 
 #[derive(Subcommand, Debug)]
 pub enum Homies {
     /// Add a homie
-    #[clap(visible_alias = "a")]
+    // #[clap(visible_alias = "a")]
     Add {
         /// Name of homie
         #[clap(name = "homie's name", value_parser)]
@@ -33,7 +36,7 @@ pub enum Homies {
     },
 
     /// Delete a homie
-    #[clap(visible_alias = "d")]
+    // #[clap(visible_alias = "d")]
     Delete {
         /// name of homie to delete
         #[clap(short, value_parser)]
@@ -41,7 +44,7 @@ pub enum Homies {
     },
 
     /// Rename a homie
-    #[clap(visible_alias = "r")]
+    // #[clap(visible_alias = "r")]
     Rename {
         /// name of homie
         #[clap(short, value_parser)]
@@ -50,6 +53,9 @@ pub enum Homies {
         #[clap(short, value_parser)]
         updated_name: String,
     },
+
+    #[command(subcommand)]
+    Restaurants(AddRestaurant),
 }
 
 #[derive(Subcommand, Debug)]
@@ -76,6 +82,58 @@ pub enum Recipes {
         /// name of recipie
         #[clap(short, value_parser)]
         recipe_name: String,
+        /// new name
+        #[clap(short, value_parser)]
+        updated_name: String,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum AddRestaurant {
+    /// Add a restaurant
+    #[clap(visible_alias = "a")]
+    Add {
+        /// Homie Name
+        #[clap(name = "homie name", value_parser)]
+        homie_name: String,
+        /// Name of restaurant
+        #[clap(name = "restaurant name", value_parser)]
+        restaurant_name: String,
+    },
+
+    /// Delete a restaurant
+    #[clap(visible_alias = "d")]
+    Delete {
+        /// name of restaurant to delete
+        #[clap(short, value_parser)]
+        restaurant_name: String,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+pub enum Restaurants {
+    /// Add a restaurant
+    #[clap(visible_alias = "a")]
+    Add {
+        /// Name of restaurant
+        #[clap(name = "restaurant name", value_parser)]
+        restaurant_name: String,
+    },
+
+    /// Delete a restaurant
+    #[clap(visible_alias = "d")]
+    Delete {
+        /// name of restaurant to delete
+        #[clap(short, value_parser)]
+        restaurant_name: String,
+    },
+
+    /// Rename a restaurant
+    #[clap(visible_alias = "r")]
+    Rename {
+        /// name of restaurant
+        #[clap(short, value_parser)]
+        restaurant_name: String,
         /// new name
         #[clap(short, value_parser)]
         updated_name: String,
