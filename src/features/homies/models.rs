@@ -1,20 +1,41 @@
+use serde::Serialize;
+use sqlx::FromRow;
 use thiserror::Error;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct Homie {
-    pub id: i32,
-    pub name: String,
+    pub id: HomieId,
+    pub name: HomiesName,
+}
+
+#[derive(Debug, PartialEq, Eq, FromRow)]
+pub struct HomieRow {
+    id: i32,
+    user_id: i32,
+    name: String,
+}
+
+impl From<HomieRow> for Homie {
+    fn from(value: HomieRow) -> Self {
+        Self {
+            id: HomieId(value.id),
+            name: HomiesName(value.name),
+        }
+    }
 }
 
 impl Homie {
-    pub fn new(id: i32, name: HomiesName) -> Self {
-        Self { id, name: name.0 }
+    pub fn new(id: impl Into<HomieId>, name: impl Into<HomiesName>) -> Self {
+        Self {
+            id: id.into(),
+            name: name.into(),
+        }
     }
 
     pub fn as_view(&self) -> HomieView {
         HomieView {
-            id: self.id,
-            name: &self.name,
+            id: self.id.0,
+            name: &self.name.0,
         }
     }
 }
@@ -34,10 +55,16 @@ pub enum HomieNameValidationError {
     EmptyName,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct HomieId(i32);
 
-#[derive(Debug)]
+impl HomieId {
+    pub fn as_i32(&self) -> i32 {
+        self.0
+    }
+}
+
+#[derive(Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct HomiesName(String);
 
 impl HomiesName {
@@ -46,11 +73,7 @@ impl HomiesName {
     }
 }
 
-impl HomiesName {
-    fn from_string_unchecked(name: String) -> Self {
-        Self(name)
-    }
-}
+// trait TryIntoHomieName: TryInto<HomiesName, Error = HomieNameValidationError> + Debug {}
 
 impl TryFrom<String> for HomiesName {
     type Error = HomieNameValidationError;

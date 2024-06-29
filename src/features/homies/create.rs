@@ -7,11 +7,9 @@ use tracing::Instrument;
 
 use super::models::Homie;
 use super::HomieNameValidationError;
-use crate::user::UserId;
-
+use super::HomieRow;
 use super::HomiesName;
-
-trait TryIntoHomieName: TryInto<HomiesName, Error = HomieNameValidationError> + Debug {}
+use crate::user::UserId;
 
 #[tracing::instrument(skip(db))]
 pub async fn create_homie(
@@ -73,12 +71,12 @@ impl CreateHomie for Pool<Postgres> {
         &self,
         params: CreateHomieParams<'a>,
     ) -> Result<Homie, CreateHomieError> {
-        let homie = sqlx::query_as!(
-            Homie,
-            r#"INSERT INTO homies (user_id, name) VALUES ($1, $2) RETURNING id, name"#,
-            params.user_id,
-            params.name
+        let homie: HomieRow = sqlx::query_as(
+            r#"INSERT INTO homies (user_id, name) VALUES ($1, $2) RETURNING id, user_id, name"#,
         )
+        .bind(params.user_id)
+        .bind(params.name.to_string())
+        // .bind((params.user_id, params.name.to_string()))
         .fetch_one(self)
         .instrument(tracing::info_span!("create_homie_db_query"))
         .await
@@ -100,6 +98,6 @@ impl CreateHomie for Pool<Postgres> {
             }
             _ => CreateHomieError::UnknownDbError(e),
         })?;
-        Ok(homie)
+        Ok(homie.into())
     }
 }

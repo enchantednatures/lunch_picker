@@ -1,9 +1,10 @@
+drop table homies cascade;
 drop table users cascade;
 drop table recipes cascade;
-drop table recent_meals cascade;
-drop table homies cascade;
-drop table homies_favorite_recipes cascade;
 drop table restaurants cascade;
+drop table recent_restaurants cascade;
+drop table recent_recipes cascade;
+drop table homies_favorite_recipes cascade;
 drop table homies_favorite_restaurants cascade;
 
 drop type measure cascade;

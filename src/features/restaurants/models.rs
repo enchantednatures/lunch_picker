@@ -1,20 +1,50 @@
+use sqlx::prelude::FromRow;
 use thiserror::Error;
+
+#[derive(Debug, PartialEq, Eq, FromRow)]
+pub struct RestaurantRow {
+    id: i32,
+    user_id: i32,
+    name: String,
+}
+
+impl RestaurantRow {
+    pub fn name(&self) -> String {
+        self.name.clone()
+    }
+}
+
+impl From<RestaurantRow> for Restaurant {
+    fn from(row: RestaurantRow) -> Self {
+        Self::new_unchecked(row.id, row.name)
+    }
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Restaurant {
-    pub id: i32,
-    pub name: String,
+    pub id: RestaurantId,
+    pub name: RestaurantName,
 }
 
 impl Restaurant {
-    pub fn new(id: i32, name: RestaurantName) -> Self {
-        Self { id, name: name.0 }
+    pub fn new(id: impl Into<RestaurantId>, name: impl Into<RestaurantName>) -> Self {
+        Self {
+            id: id.into(),
+            name: name.into(),
+        }
+    }
+
+    fn new_unchecked(id: i32, name: String) -> Self {
+        Self {
+            id: RestaurantId(id),
+            name: RestaurantName::from_string_unchecked(name),
+        }
     }
 
     pub fn as_view(&self) -> RestaurantView {
         RestaurantView {
-            id: self.id,
-            name: &self.name,
+            id: self.id.0,
+            name: &self.name.0,
         }
     }
 }
@@ -34,10 +64,28 @@ pub enum RestaurantNameValidationError {
     EmptyName,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct RestaurantId(i32);
 
-#[derive(Debug)]
+impl From<i32> for RestaurantId {
+    fn from(id: i32) -> Self {
+        RestaurantId(id)
+    }
+}
+
+impl From<&i32> for RestaurantId {
+    fn from(id: &i32) -> Self {
+        RestaurantId(*id)
+    }
+}
+
+impl RestaurantId {
+    pub fn as_i32(&self) -> &i32 {
+        &self.0
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct RestaurantName(String);
 
 impl RestaurantName {

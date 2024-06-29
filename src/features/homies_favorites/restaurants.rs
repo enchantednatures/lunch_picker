@@ -16,7 +16,7 @@ pub async fn add_homies_favorite_restaurant(
     restaurant_name: impl TryInto<RestaurantName, Error = RestaurantNameValidationError> + Debug,
     user_id: impl Into<UserId> + Debug,
     db: &impl AddFavoriteRestaurantToHomie,
-) -> Result<(), CreateHomieError> {
+) -> Result<(), AddHomiesFavoriteRestaurantError> {
     let add_favorite_to_homie_params = AddFavoriteRestaurantToHomieParams::new(
         user_id.into(),
         homie_name.try_into()?,
@@ -28,7 +28,7 @@ pub async fn add_homies_favorite_restaurant(
         .map_err(|e| match e {
             sqlx::Error::Database(db_error) => {
                 if db_error.is_unique_violation() {
-                    return CreateHomieError::HomieAlreadyHasFavorite {
+                    return AddHomiesFavoriteRestaurantError::HomieAlreadyHasFavorite {
                         name: add_favorite_to_homie_params.name.as_str().to_string(),
                         restaurant_name: add_favorite_to_homie_params
                             .restaurant_name
@@ -36,17 +36,17 @@ pub async fn add_homies_favorite_restaurant(
                             .to_string(),
                     };
                 } else if db_error.is_foreign_key_violation() {
-                    return CreateHomieError::ForeignKeyViolation {
+                    return AddHomiesFavoriteRestaurantError::ForeignKeyViolation {
                         constraint: db_error
                             .constraint()
                             .expect("Constraint should be named if it is a ForeignKeyViolation")
                             .to_string(),
                     };
                 }
-                CreateHomieError::UnknownDbError(sqlx::Error::Database(db_error))
+                AddHomiesFavoriteRestaurantError::UnknownDbError(sqlx::Error::Database(db_error))
             }
-            sqlx::Error::RowNotFound => CreateHomieError::NoFavoriteAdded,
-            _ => CreateHomieError::UnknownDbError(e),
+            sqlx::Error::RowNotFound => AddHomiesFavoriteRestaurantError::NoFavoriteAdded,
+            _ => AddHomiesFavoriteRestaurantError::UnknownDbError(e),
         })?;
 
     Ok(())
@@ -70,7 +70,7 @@ impl AddFavoriteRestaurantToHomieParams {
 }
 
 #[derive(Error, Debug)]
-pub enum CreateHomieError {
+pub enum AddHomiesFavoriteRestaurantError {
     #[error(transparent)]
     HomieNameValidationError(#[from] HomieNameValidationError),
 
@@ -111,9 +111,10 @@ impl AddFavoriteRestaurantToHomie for Pool<Postgres> {
     ) -> Result<(), sqlx::Error> {
         let result = sqlx::query!(
             r#"
-                insert into homies_favorite_restaurants (homie_id, restaurant_id)
+                insert into homies_favorite_restaurants (homie_id, user_id, restaurant_id)
                 select 
                     h.id, 
+                    $1,
                     r.id
                 from homies h
                 join restaurants r on r.name = $3 and r.user_id = $1

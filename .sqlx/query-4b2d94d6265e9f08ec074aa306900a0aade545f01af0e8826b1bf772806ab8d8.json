@@ -11,13 +11,13 @@
       {
         "ordinal": 1,
         "name": "name",
-        "type_info": "Varchar"
+        "type_info": "Name"
       }
     ],
     "parameters": {
       "Left": [
         "Int4",
-        "Varchar"
+        "Name"
       ]
     },
     "nullable": [

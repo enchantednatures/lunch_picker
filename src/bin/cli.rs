@@ -3,6 +3,7 @@
 use anyhow::Result;
 use clap::Parser;
 use dialoguer::MultiSelect;
+use dialoguer::Select;
 use lunch_picker::cli_args::AddRestaurant;
 use lunch_picker::cli_args::CliArgs;
 use lunch_picker::cli_args::Command;
@@ -11,11 +12,16 @@ use lunch_picker::cli_args::Recipes;
 use lunch_picker::cli_args::Restaurants;
 use lunch_picker::db::Migrator;
 use lunch_picker::features::add_homies_favorite_restaurant;
+use lunch_picker::features::add_recent_restaurant_for_homie;
+use lunch_picker::features::add_recent_restaurant_for_homies;
 use lunch_picker::features::create_homie;
 use lunch_picker::features::create_recipe;
 use lunch_picker::features::create_restaurant;
 use lunch_picker::features::get_all_homies;
+use lunch_picker::features::get_candidate_restaurants;
 use lunch_picker::features::Homie;
+use lunch_picker::features::HomieId;
+use lunch_picker::features::Restaurant;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -27,6 +33,27 @@ use tracing_subscriber::EnvFilter;
 use tracing_subscriber::Registry;
 
 const CLI_USER_ID: i32 = 1;
+
+// trait HomiePaging: Iterator<Item = Vec<Homie>> {
+//     fn get_next(&mut self) -> Option<Vec<Homie>>;
+//     fn get_previous(&mut self) -> Option<Vec<Homie>>;
+// }
+
+async fn select_restaurant(restaurants: &[Restaurant]) -> &Restaurant {
+    let restaurant_names = restaurants
+        .iter()
+        .map(|h| {
+            return h.name.as_str();
+        })
+        .collect::<Vec<&str>>();
+    let chosen = Select::new()
+        .with_prompt("where would you like to eat?")
+        .items(&restaurant_names)
+        .interact()
+        .unwrap();
+
+    &restaurants[chosen]
+}
 
 async fn get_home_homies(homies: &[Homie]) -> Vec<&Homie> {
     let homies_names = homies
@@ -62,6 +89,14 @@ impl AppState {
     async fn work(&self) -> Result<()> {
         let homies: Vec<Homie> = get_all_homies(1, &self.db).await?;
         let home_homies = get_home_homies(&homies).await;
+        let hh: Vec<&HomieId> = home_homies.iter().map(|&x| &x.id).collect();
+        let restaurants = get_candidate_restaurants(&hh, 1, &self.db).await?;
+        dbg!(&restaurants);
+        let selected = select_restaurant(&restaurants).await;
+        println!("Selected restaurant: {}", selected.name.as_str());
+
+        add_recent_restaurant_for_homies(hh, selected.id, CLI_USER_ID, &self.db).await?;
+
         Ok(())
     }
 }
@@ -94,9 +129,9 @@ async fn main() -> Result<()> {
     match args.command {
         Some(cmd) => match cmd {
             Command::Homies(homie_command) => match homie_command {
-                Homies::Add { homies_name } => {
-                    println!("Adding homie {}", homies_name);
-                    _ = create_homie(homies_name, 1, &app_state.db).await?;
+                Homies::Add(args) => {
+                    println!("Adding homie {}", args.homies_name);
+                    _ = create_homie(args.homies_name, CLI_USER_ID, &app_state.db).await?;
                 }
                 Homies::Delete { homies_name } => println!("Deleting homie {}", homies_name),
                 Homies::Rename {
@@ -112,6 +147,25 @@ async fn main() -> Result<()> {
                         restaurant_name,
                     } => {
                         add_homies_favorite_restaurant(
+                            homie_name.clone(),
+                            restaurant_name.clone(),
+                            1,
+                            &app_state.db,
+                        )
+                        .await?;
+                        println!(
+                            "Added restaurant {} to homie {}",
+                            restaurant_name, homie_name
+                        )
+                    }
+                    _ => println!("Restaurant command"),
+                },
+                Homies::RecentRestaurant(restaurant_command) => match restaurant_command {
+                    AddRestaurant::Add {
+                        homie_name,
+                        restaurant_name,
+                    } => {
+                        add_recent_restaurant_for_homie(
                             homie_name,
                             restaurant_name,
                             1,
@@ -139,6 +193,7 @@ async fn main() -> Result<()> {
                 }
                 _ => println!("Recipe command"),
             },
+            Command::Pick => app_state.work().await?,
         },
         None => app_state.work().await?,
     }

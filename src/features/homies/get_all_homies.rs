@@ -7,6 +7,7 @@ use thiserror::Error;
 use crate::user::UserId;
 
 use super::Homie;
+use super::HomieRow;
 
 #[tracing::instrument(name = "Getting all Homies", skip(db))]
 pub async fn get_all_homies(
@@ -29,13 +30,11 @@ trait GetAllHomies {
 
 impl GetAllHomies for Pool<Postgres> {
     async fn get_all_homies(&self, params: UserId) -> Result<Vec<Homie>, sqlx::Error> {
-        let homie = sqlx::query_as!(
-            Homie,
-            r#"select id, name from homies where user_id = $1"#,
-            params.as_i32()
-        )
-        .fetch_all(self)
-        .await?;
-        Ok(homie)
+        let homie: Vec<HomieRow> =
+            sqlx::query_as(r#"select id, user_id, name from homies where user_id = $1"#)
+                .bind(params.as_i32())
+                .fetch_all(self)
+                .await?;
+        Ok(homie.into_iter().map(|x| x.into()).collect())
     }
 }

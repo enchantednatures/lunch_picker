@@ -17,7 +17,7 @@ async fn test_add_existing_restaurant_fails(pool: PgPool) -> Result<()> {
 async fn test_add_restaurant(pool: PgPool) -> Result<()> {
     let result = create_restaurant("Thai".into(), -2, &pool).await?;
 
-    assert_eq!("Thai", result.name);
+    assert_eq!("Thai", result.name.as_str());
 
     Ok(())
 }

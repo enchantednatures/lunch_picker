@@ -17,7 +17,7 @@ async fn test_add_existing_homie_fails(pool: PgPool) -> Result<()> {
 async fn test_add_homie(pool: PgPool) -> Result<()> {
     let result = create_homie("Markus".to_string(), -1, &pool).await?;
 
-    assert_eq!("Markus", result.name);
+    assert_eq!("Markus", result.name.as_str());
 
     Ok(())
 }

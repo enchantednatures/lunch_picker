@@ -6,6 +6,7 @@ use thiserror::Error;
 use tracing::Instrument;
 
 use super::models::Restaurant;
+use super::RestaurantRow;
 use crate::user::UserId;
 
 #[tracing::instrument(skip(db))]
@@ -67,12 +68,11 @@ impl CreateRestaurant for Pool<Postgres> {
         &self,
         params: CreateRestaurantParams<'a>,
     ) -> Result<Restaurant, CreateRestaurantError> {
-        let restaurant = sqlx::query_as!(
-            Restaurant,
-            r#"INSERT INTO restaurants (user_id, name) VALUES ($1, $2) RETURNING id, name"#,
-            params.user_id,
-            params.name
+        let restaurant: RestaurantRow = sqlx::query_as(
+            r#"INSERT INTO restaurants (user_id, name) VALUES ($1, $2) RETURNING id, user_id, name"#,
         )
+        .bind(params.user_id)
+        .bind(params.name)
         .fetch_one(self)
         .instrument(tracing::info_span!("create_restaurant_db_query"))
         .await
@@ -94,6 +94,6 @@ impl CreateRestaurant for Pool<Postgres> {
             }
             _ => CreateRestaurantError::UnknownDbError(e),
         })?;
-        Ok(restaurant)
+        Ok(restaurant.into())
     }
 }

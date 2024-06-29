@@ -1,3 +1,4 @@
+use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
 
@@ -23,17 +24,27 @@ pub enum Command {
 
     #[command(subcommand)]
     Restaurants(Restaurants),
+
+    #[clap(
+        name = "pick-lunch",
+        visible_alias = "p",
+        about = "Pick what to eat for lunch"
+    )]
+    Pick,
+}
+
+#[derive(Args, Debug)]
+pub struct AddHomiesArgs {
+    /// Name of homie
+    #[clap(name = "homie's name", value_parser)]
+    pub homies_name: String,
 }
 
 #[derive(Subcommand, Debug)]
 pub enum Homies {
     /// Add a homie
     // #[clap(visible_alias = "a")]
-    Add {
-        /// Name of homie
-        #[clap(name = "homie's name", value_parser)]
-        homies_name: String,
-    },
+    Add(AddHomiesArgs),
 
     /// Delete a homie
     // #[clap(visible_alias = "d")]
@@ -56,6 +67,9 @@ pub enum Homies {
 
     #[command(subcommand)]
     Restaurants(AddRestaurant),
+
+    #[command(subcommand)]
+    RecentRestaurant(AddRestaurant),
 }
 
 #[derive(Subcommand, Debug)]
