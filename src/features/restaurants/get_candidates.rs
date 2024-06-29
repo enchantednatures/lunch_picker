@@ -33,7 +33,7 @@ with home_homies AS (select *
      recents as (select restaurant_id, count(distinct homie_id) as occurrences
                  from homies_recents_restaurants_view v
                           join home_homies using (homie_id)
-                        where v.user_id = $2
+                 where v.user_id = $2
                  group by v.restaurant_id
                  order by occurrences desc),
      most_recents as (select restaurant_id
@@ -48,8 +48,9 @@ with home_homies AS (select *
                                where r.user_id = 1
                                  and not exists (select 1
                                                  from homies_recents_restaurants_view v
-                                                 where v.homie_id = h.id
-                                                   and v.restaurant_id = r.id
+                                                          join home_homies hh on v.homie_id = hh.homie_id
+                                                 where v.restaurant_id = r.id
+                                                   and (date = current_date or v.homie_id = h.id)
                                                    and v.user_id = r.user_id))
 
 select r.*
