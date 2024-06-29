@@ -1,7 +1,6 @@
 use anyhow::Result;
 use lunch_picker::features::get_candidate_restaurants;
 use sqlx::PgPool;
-use thiserror::Error;
 
 #[sqlx::test(fixtures(
     "homies",
