@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n                insert into recent_restaurants (homie_id, user_id, restaurant_id)\n                select \n                    h.id, \n                    $1,\n                    r.id\n                from homies h\n                join restaurants r on r.name = $3 and r.user_id = $1\n                where h.name = $2 and h.user_id = $1\n                limit 1\n                returning *;\n                ;\n            ",
+  "query": "\n                insert into recent_restaurants (homie_id, user_id, restaurant_id)\n                select \n                    h.id, \n                    $1,\n                    r.id\n                from homies h\n                join restaurants r on r.name = $3 and r.user_id = $1\n                where h.name = $2 and h.user_id = $1\n                limit 1\n                returning *;\n            ",
   "describe": {
     "columns": [
       {
@@ -44,5 +44,5 @@
       false
     ]
   },
-  "hash": "c7668ca4453f1332f7f75f1f803796de2cb4b646b7bb5025307e97d205c72f70"
+  "hash": "8219a07b4af33f2e688c23f90044d651a6e2cc64204953537dc1ca0af5f58e4c"
 }
