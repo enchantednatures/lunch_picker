@@ -2,6 +2,7 @@
 
 use anyhow::Result;
 use clap::Parser;
+use lunch_picker::add_homies;
 use lunch_picker::cli_args::AddRestaurant;
 use lunch_picker::cli_args::CliArgs;
 use lunch_picker::cli_args::Command;
@@ -37,11 +38,6 @@ use tracing_subscriber::Registry;
 
 const CLI_USER_ID: i32 = 1;
 
-// trait HomiePaging: Iterator<Item = Vec<Homie>> {
-//     fn get_next(&mut self) -> Option<Vec<Homie>>;
-//     fn get_previous(&mut self) -> Option<Vec<Homie>>;
-// }
-
 pub(crate) fn init_tracer() -> Result<opentelemetry_sdk::trace::Tracer, TraceError> {
     opentelemetry_otlp::new_pipeline()
         .tracing()
@@ -68,7 +64,18 @@ impl AppState {
 
     #[tracing::instrument(name = "User Interaction", skip(self))]
     async fn work(&self) -> Result<()> {
-        let homies: Vec<Homie> = get_all_homies(1, &self.db).await?;
+        let mut homies: Vec<Homie> = get_all_homies(1, &self.db).await?;
+        if homies.is_empty() {
+            event!(Level::INFO, "No homies found");
+            homies = add_homies(1, &self.db).await?;
+
+            if homies.is_empty() {
+                event!(
+                    Level::ERROR,
+                    "No homies found after user was supposed to add homies...."
+                );
+            }
+        }
         let home_homies = get_home_homies(&homies).await;
         let restaurants = get_candidate_restaurants(home_homies.clone(), 1, &self.db).await?;
 
@@ -79,7 +86,6 @@ impl AppState {
             name = "Selected restaurant",
             restaurant_name = selected.name.as_str()
         );
-
 
         add_recent_restaurant_for_homies(home_homies, selected.id, CLI_USER_ID, &self.db).await?;
 

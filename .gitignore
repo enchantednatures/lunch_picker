@@ -10,3 +10,9 @@
 /lunch.db-shm
 /lunch.db-wal
 /lunch.db
+
+# sst
+.sst
+develop/*
+names.txt
+restaurants.txt

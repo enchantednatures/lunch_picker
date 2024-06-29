@@ -58,7 +58,7 @@ pub enum CreateHomieError {
     Unknown,
 }
 
-trait CreateHomie {
+pub trait CreateHomie {
     async fn create_homie<'a>(
         &self,
         params: CreateHomieParams<'a>,

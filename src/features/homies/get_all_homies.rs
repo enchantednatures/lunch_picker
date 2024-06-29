@@ -25,7 +25,7 @@ pub enum GetAllHomiesError {
     DbError(#[from] sqlx::Error),
 }
 
-trait GetAllHomies {
+pub trait GetAllHomies {
     async fn get_all_homies(&self, params: UserId) -> Result<Vec<Homie>, sqlx::Error>;
 }
 
