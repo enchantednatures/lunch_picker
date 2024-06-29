@@ -26,7 +26,7 @@ async fn duplicate_cannot_be_added(pool: PgPool) -> Result<()> {
     "recent_restaurants"
 ))]
 async fn valid(pool: PgPool) -> Result<()> {
-    Ok(add_recent_restaurant_for_homie("Bob".to_string(), "Pizza".to_string(), -1, &pool).await?)
+    Ok(add_recent_restaurant_for_homie("Ringo".to_string(), "Pizza".to_string(), -1, &pool).await?)
 }
 
 #[sqlx::test(fixtures(
@@ -37,7 +37,8 @@ async fn valid(pool: PgPool) -> Result<()> {
 ))]
 async fn no_recents_are_added_for_non_existant_homies(pool: PgPool) -> Result<()> {
     let actual =
-        add_recent_restaurant_for_homie("Bobbert".to_string(), "Pizza".to_string(), -1, &pool).await;
+        add_recent_restaurant_for_homie("Bobbert".to_string(), "Pizza".to_string(), -1, &pool)
+            .await;
 
     assert_eq!("No recent added", actual.unwrap_err().to_string());
     Ok(())

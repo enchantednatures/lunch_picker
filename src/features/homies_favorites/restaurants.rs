@@ -109,7 +109,7 @@ impl AddFavoriteRestaurantToHomie for Pool<Postgres> {
         &self,
         params: &AddFavoriteRestaurantToHomieParams,
     ) -> Result<(), sqlx::Error> {
-        let result = sqlx::query!(
+        _ = sqlx::query!(
             r#"
                 insert into homies_favorite_restaurants (homie_id, user_id, restaurant_id)
                 select 

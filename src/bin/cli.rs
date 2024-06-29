@@ -2,8 +2,6 @@
 
 use anyhow::Result;
 use clap::Parser;
-use dialoguer::MultiSelect;
-use dialoguer::Select;
 use lunch_picker::cli_args::AddRestaurant;
 use lunch_picker::cli_args::CliArgs;
 use lunch_picker::cli_args::Command;
@@ -20,16 +18,21 @@ use lunch_picker::features::create_restaurant;
 use lunch_picker::features::get_all_homies;
 use lunch_picker::features::get_candidate_restaurants;
 use lunch_picker::features::Homie;
-use lunch_picker::features::HomieId;
-use lunch_picker::features::Restaurant;
+use lunch_picker::get_home_homies;
+use lunch_picker::select_restaurant;
+use opentelemetry::trace::TraceError;
+use opentelemetry::KeyValue;
+use opentelemetry_otlp::WithExportConfig;
+use opentelemetry_sdk::runtime;
+use opentelemetry_sdk::trace::config;
+use opentelemetry_sdk::Resource;
 use sqlx::postgres::PgPoolOptions;
 use sqlx::Pool;
 use sqlx::Postgres;
+use tracing::event;
 use tracing::Instrument;
-use tracing_bunyan_formatter::BunyanFormattingLayer;
-use tracing_bunyan_formatter::JsonStorageLayer;
+use tracing::Level;
 use tracing_subscriber::prelude::*;
-use tracing_subscriber::EnvFilter;
 use tracing_subscriber::Registry;
 
 const CLI_USER_ID: i32 = 1;
@@ -39,42 +42,19 @@ const CLI_USER_ID: i32 = 1;
 //     fn get_previous(&mut self) -> Option<Vec<Homie>>;
 // }
 
-async fn select_restaurant(restaurants: &[Restaurant]) -> &Restaurant {
-    let restaurant_names = restaurants
-        .iter()
-        .map(|h| {
-            return h.name.as_str();
-        })
-        .collect::<Vec<&str>>();
-    let chosen = Select::new()
-        .with_prompt("where would you like to eat?")
-        .items(&restaurant_names)
-        .interact()
-        .unwrap();
-
-    &restaurants[chosen]
-}
-
-async fn get_home_homies(homies: &[Homie]) -> Vec<&Homie> {
-    let homies_names = homies
-        .iter()
-        .map(|h| {
-            return h.name.as_str();
-        })
-        .collect::<Vec<&str>>();
-    let chosen = MultiSelect::new()
-        .with_prompt("Who's home?")
-        .items(&homies_names)
-        .interact()
-        .unwrap();
-    if chosen.is_empty() {
-        println!("No homies selected");
-        return homies.iter().collect();
-    } else {
-        println!("Homies selected: {:?}", chosen);
-    }
-    let home_homies = chosen.iter().map(|&index| &homies[index]).collect();
-    home_homies
+pub(crate) fn init_tracer() -> Result<opentelemetry_sdk::trace::Tracer, TraceError> {
+    opentelemetry_otlp::new_pipeline()
+        .tracing()
+        .with_exporter(
+            opentelemetry_otlp::new_exporter()
+                .tonic()
+                .with_endpoint("http://localhost:4317"),
+        )
+        .with_trace_config(config().with_resource(Resource::new(vec![KeyValue::new(
+            "service.name",
+            "lunch_picker.cli",
+        )])))
+        .install_batch(runtime::Tokio)
 }
 
 struct AppState {
@@ -86,16 +66,22 @@ impl AppState {
         Self { db }
     }
 
+    #[tracing::instrument(name = "User Interaction", skip(self))]
     async fn work(&self) -> Result<()> {
         let homies: Vec<Homie> = get_all_homies(1, &self.db).await?;
         let home_homies = get_home_homies(&homies).await;
-        let hh: Vec<&HomieId> = home_homies.iter().map(|&x| &x.id).collect();
-        let restaurants = get_candidate_restaurants(&hh, 1, &self.db).await?;
-        dbg!(&restaurants);
-        let selected = select_restaurant(&restaurants).await;
-        println!("Selected restaurant: {}", selected.name.as_str());
+        let restaurants = get_candidate_restaurants(home_homies.clone(), 1, &self.db).await?;
 
-        add_recent_restaurant_for_homies(hh, selected.id, CLI_USER_ID, &self.db).await?;
+        let selected = select_restaurant(&restaurants).await;
+
+        event!(
+            Level::INFO,
+            name = "Selected restaurant",
+            restaurant_name = selected.name.as_str()
+        );
+
+
+        add_recent_restaurant_for_homies(home_homies, selected.id, CLI_USER_ID, &self.db).await?;
 
         Ok(())
     }
@@ -105,11 +91,15 @@ impl AppState {
 async fn main() -> Result<()> {
     let args = CliArgs::parse();
 
-    let subscriber = Registry::default()
-        .with(JsonStorageLayer)
-        .with(EnvFilter::new("info"))
-        .with(BunyanFormattingLayer::new("Lunch".into(), std::io::stdout));
+    let tracer = init_tracer()?;
 
+    // Create a tracing layer with the configured tracer
+    let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+    // Use the tracing subscriber `Registry`, or any other subscriber
+    // that impls `LookupSpan`
+    let subscriber = Registry::default().with(telemetry);
+
+    // Trace executed code
     tracing::subscriber::set_global_default(subscriber).unwrap();
 
     dbg!(&args);
@@ -181,10 +171,10 @@ async fn main() -> Result<()> {
                 Restaurants::Add { restaurant_name } => {
                     create_restaurant(restaurant_name, CLI_USER_ID, &app_state.db).await?;
                 }
-                Restaurants::Delete { restaurant_name } => todo!(),
+                Restaurants::Delete { restaurant_name: _ } => todo!(),
                 Restaurants::Rename {
-                    restaurant_name,
-                    updated_name,
+                    restaurant_name: _,
+                    updated_name: _,
                 } => todo!(),
             },
             Command::Recipes(recipe_command) => match recipe_command {
@@ -199,6 +189,6 @@ async fn main() -> Result<()> {
     }
 
     app_state.db.close().await;
-
+    opentelemetry::global::shutdown_tracer_provider();
     Ok(())
 }

@@ -3,5 +3,7 @@
 pub mod cli_args;
 pub mod db;
 pub mod features;
-pub mod interaction;
+mod interaction;
 pub mod user;
+
+pub use interaction::*;

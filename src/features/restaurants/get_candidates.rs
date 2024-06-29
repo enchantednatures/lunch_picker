@@ -2,6 +2,8 @@ use anyhow::Result;
 use sqlx::Pool;
 use sqlx::Postgres;
 use std::fmt::Debug;
+use tracing::event;
+use tracing::Instrument;
 
 use crate::features::HomieId;
 use crate::user::UserId;
@@ -10,12 +12,26 @@ use super::Restaurant;
 use super::RestaurantRow;
 
 #[tracing::instrument(skip(db))]
-pub async fn get_candidate_restaurants(
-    home_homies: &[&HomieId],
+pub async fn get_candidate_restaurants<'a, T, Y>(
+    homie_ids: T,
     user_id: impl Into<UserId> + Debug,
     db: &Pool<Postgres>,
-) -> Result<Vec<Restaurant>> {
-    let created_restaurant = db.get_candidates(home_homies, user_id.into()).await;
+) -> Result<Vec<Restaurant>>
+where
+    T: IntoIterator<Item = Y> + Debug,
+    Y: Into<HomieId> + Debug,
+{
+    let homie_ids: Vec<HomieId> = homie_ids.into_iter().map(|id| id.into()).collect();
+
+    let h: Vec<_> = homie_ids.iter().collect();
+    let user_id = user_id.into();
+
+    let created_restaurant = db.get_candidates(h.as_slice(), user_id).await;
+
+    event!(
+        tracing::Level::INFO,
+        "Got candidates restaurants for homies"
+    );
 
     Ok(created_restaurant)
 }
@@ -72,6 +88,7 @@ from (select *
         .bind(&home_homies.iter().map(|h| h.as_i32()).collect::<Vec<i32>>())
             .bind(user_id.as_i32())
         .fetch_all(self)
+        .instrument(tracing::info_span!("Getting candidates restaurants for homies", { "count of home homies" } = home_homies.len()) )
         .await
         .unwrap();
         // todo stream rows

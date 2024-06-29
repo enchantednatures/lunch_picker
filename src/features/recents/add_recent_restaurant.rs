@@ -2,7 +2,9 @@ use std::fmt::Debug;
 
 use sqlx::{Pool, Postgres};
 use thiserror::Error;
+use tracing::event;
 use tracing::Instrument;
+use tracing::Level;
 
 use crate::features::HomieId;
 use crate::features::HomieNameValidationError;
@@ -54,34 +56,52 @@ pub async fn add_recent_restaurant_for_homie(
     Ok(())
 }
 
-#[tracing::instrument(skip(db))]
-pub async fn add_recent_restaurant_for_homies(
-    homie_ids: Vec<impl Into<&HomieId> + Debug>,
+#[tracing::instrument(skip(db ))]
+pub async fn add_recent_restaurant_for_homies<'a, T, Y>(
+    homie_ids: T,
     restaurant_id: impl Into<RestaurantId> + Debug,
     user_id: impl Into<UserId> + Debug,
     db: &impl AddRecentRestaurantToHomie,
-) -> Result<(), AddHomiesRecentRestaurantError> {
-    let add_recent_to_homies_params = AddRecentRestaurantToHomiesParams::new(
-        user_id.into(),
-        homie_ids.into_iter().map(|id| id.into()).collect(),
-        restaurant_id.into(),
-    );
+) -> Result<(), AddHomiesRecentRestaurantError>
+where
+    T: IntoIterator<Item = Y> + Debug,
+    Y: Into<HomieId> + Debug,
+{
+    let restaurant_id = restaurant_id.into();
+    let homie_ids: Vec<HomieId> = homie_ids.into_iter().map(|id| id.into()).collect();
+
+    let h: Vec<_> = homie_ids.iter().collect();
+    let user_id = user_id.into();
+
+    let add_recent_to_homies_params =
+        AddRecentRestaurantToHomiesParams::new(&user_id, h.as_slice(), &restaurant_id);
 
     db.add_recent_restaurant_for_homies(&add_recent_to_homies_params)
         .await?;
+
+    event!(
+        Level::INFO,
+        name = "Recent restaurant added for home homies",
+        homie_ids = ?&homie_ids,
+        restaurant_id = &restaurant_id.as_i32()
+    );
 
     Ok(())
 }
 
 #[derive(Debug)]
 struct AddRecentRestaurantToHomiesParams<'a> {
-    user_id: UserId,
-    homies_ids: Vec<&'a HomieId>,
-    restaurant_id: RestaurantId,
+    user_id: &'a UserId,
+    homies_ids: &'a [&'a HomieId],
+    restaurant_id: &'a RestaurantId,
 }
 
 impl<'a> AddRecentRestaurantToHomiesParams<'a> {
-    fn new(user_id: UserId, homies_ids: Vec<&'a HomieId>, restaurant_id: RestaurantId) -> Self {
+    fn new(
+        user_id: &'a UserId,
+        homies_ids: &'a [&'a HomieId],
+        restaurant_id: &'a RestaurantId,
+    ) -> Self {
         Self {
             user_id,
             homies_ids,
@@ -152,7 +172,7 @@ impl AddRecentRestaurantToHomie for Pool<Postgres> {
         &self,
         params: &AddRecentRestaurantToHomieParams,
     ) -> Result<(), sqlx::Error> {
-        let result = sqlx::query!(
+        _ = sqlx::query!(
             r#"
                 insert into recent_restaurants (homie_id, user_id, restaurant_id)
                 select 

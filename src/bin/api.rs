@@ -1,3 +1,0 @@
-mod router {}
-
-fn main() {}

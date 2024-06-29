@@ -55,12 +55,30 @@ pub enum HomieNameValidationError {
     EmptyName,
 }
 
-#[derive(Debug, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Serialize, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
 pub struct HomieId(i32);
 
 impl HomieId {
     pub fn as_i32(&self) -> i32 {
         self.0
+    }
+}
+
+impl From<&Homie> for HomieId {
+    fn from(homie: &Homie) -> Self {
+        homie.id
+    }
+}
+
+impl From<Homie> for HomieId {
+    fn from(homie: Homie) -> Self {
+        homie.id
+    }
+}
+
+impl From<i32> for HomieId {
+    fn from(id: i32) -> Self {
+        HomieId(id)
     }
 }
 
