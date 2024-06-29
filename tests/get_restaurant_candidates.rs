@@ -18,4 +18,3 @@ async fn test_restaurant_candidates(pool: PgPool) -> Result<()> {
 
     Ok(())
 }
-

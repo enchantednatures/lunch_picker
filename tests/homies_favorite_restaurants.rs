@@ -22,7 +22,8 @@ async fn valid(pool: PgPool) -> Result<()> {
 #[sqlx::test(fixtures("homies", "restaurants", "homies_favorite_restaurants"))]
 async fn no_favorites_are_added_for_non_existant_homies(pool: PgPool) -> Result<()> {
     let actual =
-        add_homies_favorite_restaurant("Bobberto".to_string(), "Pizza".to_string(), -1, &pool).await;
+        add_homies_favorite_restaurant("Bobberto".to_string(), "Pizza".to_string(), -1, &pool)
+            .await;
 
     assert_eq!("No favorite added", actual.unwrap_err().to_string());
     Ok(())

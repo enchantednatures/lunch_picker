@@ -26,7 +26,10 @@ async fn duplicate_cannot_be_added(pool: PgPool) -> Result<()> {
     "recent_restaurants"
 ))]
 async fn valid(pool: PgPool) -> Result<()> {
-    Ok(add_recent_restaurant_for_homie("Ringo".to_string(), "Pizza".to_string(), -1, &pool).await?)
+    Ok(
+        add_recent_restaurant_for_homie("Ringo".to_string(), "Pizza".to_string(), -1, &pool)
+            .await?,
+    )
 }
 
 #[sqlx::test(fixtures(

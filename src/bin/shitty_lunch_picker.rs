@@ -80,7 +80,6 @@ impl AppState {
             restaurant_name = selected.name.as_str()
         );
 
-
         add_recent_restaurant_for_homies(home_homies, selected.id, CLI_USER_ID, &self.db).await?;
 
         Ok(())

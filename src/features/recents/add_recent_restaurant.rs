@@ -56,7 +56,7 @@ pub async fn add_recent_restaurant_for_homie(
     Ok(())
 }
 
-#[tracing::instrument(skip(db ))]
+#[tracing::instrument(skip(db))]
 pub async fn add_recent_restaurant_for_homies<'a, T, Y>(
     homie_ids: T,
     restaurant_id: impl Into<RestaurantId> + Debug,
