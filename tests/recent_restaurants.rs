@@ -2,6 +2,7 @@ use anyhow::Result;
 use lunch_picker::features::add_recent_restaurant_for_homie;
 use sqlx::PgPool;
 
+#[cfg_attr(not(feature = "postgres_tests"), ignore)]
 #[sqlx::test(fixtures(
     "homies",
     "restaurants",
@@ -19,6 +20,7 @@ async fn duplicate_cannot_be_added(pool: PgPool) -> Result<()> {
     Ok(())
 }
 
+#[cfg_attr(not(feature = "postgres_tests"), ignore)]
 #[sqlx::test(fixtures(
     "homies",
     "restaurants",
@@ -32,6 +34,7 @@ async fn valid(pool: PgPool) -> Result<()> {
     )
 }
 
+#[cfg_attr(not(feature = "postgres_tests"), ignore)]
 #[sqlx::test(fixtures(
     "homies",
     "restaurants",
