@@ -4,7 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-postgres_tests = []
+default = ["postgres"] # soon to be sqlite
+postgres_tests = ["postgres"]
+postgres = ["sqlx/postgres"]
+sqlite = ["sqlx/sqlite"]
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
@@ -31,7 +34,7 @@ opentelemetry-otlp = { version = "0.16" , features = ["tonic", "default"] }
 
 [dependencies.sqlx]
 version = "0.7"
-features = ["postgres", "runtime-tokio-rustls", "macros", "chrono", "uuid"]
+features = ["runtime-tokio-rustls", "macros", "chrono", "uuid"]
 
 [dev-dependencies]
 assert_cmd = "2.0.14"
