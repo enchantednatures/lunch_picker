@@ -64,7 +64,7 @@ pub enum RestaurantNameValidationError {
     EmptyName,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct RestaurantId(i32);
 
 impl From<i32> for RestaurantId {

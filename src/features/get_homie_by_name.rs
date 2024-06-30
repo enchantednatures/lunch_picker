@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use sqlx::Pool;
+#[cfg(feature = "postgres")]
 use sqlx::Postgres;
 use thiserror::Error;
 
@@ -52,6 +53,7 @@ trait GetHomie {
     ) -> Result<Homie, sqlx::Error>;
 }
 
+#[cfg(feature = "postgres")]
 impl GetHomie for Pool<Postgres> {
     async fn get_homie<'a>(
         &self,

@@ -1,6 +1,7 @@
 insert into public.homies_favorite_restaurants (homie_id, restaurant_id, user_id)
 values  (1, 3, 1),
         (1, 10, 1),
+        (1, 10, 1),
         (1, 9, 1),
         (1, 22, 1),
         (1, 4, 1),

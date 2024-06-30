@@ -1,6 +1,10 @@
 use anyhow::Result;
 use sqlx::Pool;
+#[cfg(feature = "postgres")]
 use sqlx::Postgres;
+#[cfg(feature = "sqlite")]
+use sqlx::Sqlite;
+
 use std::fmt::Debug;
 use tracing::event;
 use tracing::Instrument;
@@ -15,7 +19,7 @@ use super::RestaurantRow;
 pub async fn get_candidate_restaurants<'a, T, Y>(
     homie_ids: T,
     user_id: impl Into<UserId> + Debug,
-    db: &Pool<Postgres>,
+    db: &impl GetCandidates,
 ) -> Result<Vec<Restaurant>>
 where
     T: IntoIterator<Item = Y> + Debug,
@@ -40,6 +44,7 @@ trait GetCandidates {
     async fn get_candidates(&self, home_homies: &[&HomieId], user_id: UserId) -> Vec<Restaurant>;
 }
 
+#[cfg(feature = "postgres")]
 impl GetCandidates for Pool<Postgres> {
     async fn get_candidates(&self, home_homies: &[&HomieId], user_id: UserId) -> Vec<Restaurant> {
         let candidates: Vec<RestaurantRow> = sqlx::query_as(
@@ -93,5 +98,23 @@ from (select *
         .unwrap();
         // todo stream rows
         candidates.into_iter().map(|r| r.into()).collect()
+    }
+}
+
+#[cfg(feature = "sqlite")]
+impl GetCandidates for Pool<Sqlite> {
+    async fn get_candidates(&self, home_homies: &[&HomieId], user_id: UserId) -> Vec<Restaurant> {
+        todo!()
+        // let candidates: Vec<RestaurantRow> = sqlx::query_as(
+        //     r#" "#,
+        // )
+        // .bind(&home_homies.iter().map(|h| h.as_i32()).collect::<Vec<i32>>())
+        //     .bind(user_id.as_i32())
+        // .fetch_all(self)
+        // .instrument(tracing::info_span!("Getting candidates restaurants for homies", { "count of home homies" } = home_homies.len()) )
+        // .await
+        // .unwrap();
+        // // todo stream rows
+        // candidates.into_iter().map(|r| r.into()).collect()
     }
 }

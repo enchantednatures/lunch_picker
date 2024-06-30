@@ -84,6 +84,10 @@ pub enum Homies {
 
     #[command(subcommand)]
     RecentRestaurant(AddRestaurant),
+
+    /// Manage Favorites for a Homie Interactively
+    #[clap(visible_alias = "i")]
+    Interactive
 }
 
 #[derive(Subcommand, Debug)]
@@ -132,8 +136,11 @@ pub enum AddRestaurant {
     /// Delete a restaurant
     #[clap(visible_alias = "d")]
     Delete {
+        /// Homie Name
+        #[clap(name = "homie name", value_parser)]
+        homie_name: String,
         /// name of restaurant to delete
-        #[clap(short, value_parser)]
+        #[clap(name = "restaurant name", value_parser)]
         restaurant_name: String,
     },
 }

@@ -16,55 +16,55 @@ use crate::features::RestaurantNameValidationError;
 use crate::user::UserId;
 
 #[tracing::instrument(skip(db))]
-pub async fn add_homies_favorite_restaurant(
+pub async fn remove_homies_favorite_restaurant(
     homie_name: impl TryInto<HomiesName, Error = HomieNameValidationError> + Debug,
     restaurant_name: impl TryInto<RestaurantName, Error = RestaurantNameValidationError> + Debug,
     user_id: impl Into<UserId> + Debug,
-    db: &impl AddFavoriteRestaurantToHomie,
-) -> Result<(), AddHomiesFavoriteRestaurantError> {
-    let add_favorite_to_homie_params = AddFavoriteRestaurantToHomieParams::new(
+    db: &impl RemoveFavoriteRestaurantFromHomie,
+) -> Result<(), RemoveHomiesFavoriteRestaurantError> {
+    let remove_favorite_from_homie_params = RemoveFavoriteRestaurantFromHomieParams::new(
         user_id.into(),
         homie_name.try_into()?,
         restaurant_name.try_into()?,
     );
 
-    db.add_homies_favorite_restaurant(&add_favorite_to_homie_params)
+    db.remove_homies_favorite_restaurant(&remove_favorite_from_homie_params)
         .await
         .map_err(|e| match e {
             sqlx::Error::Database(db_error) => {
                 if db_error.is_unique_violation() {
-                    return AddHomiesFavoriteRestaurantError::HomieAlreadyHasFavorite {
-                        name: add_favorite_to_homie_params.name.as_str().to_string(),
-                        restaurant_name: add_favorite_to_homie_params
+                    return RemoveHomiesFavoriteRestaurantError::HomieAlreadyHasFavorite {
+                        name: remove_favorite_from_homie_params.name.as_str().to_string(),
+                        restaurant_name: remove_favorite_from_homie_params
                             .restaurant_name
                             .as_str()
                             .to_string(),
                     };
                 } else if db_error.is_foreign_key_violation() {
-                    return AddHomiesFavoriteRestaurantError::ForeignKeyViolation {
+                    return RemoveHomiesFavoriteRestaurantError::ForeignKeyViolation {
                         constraint: db_error
                             .constraint()
                             .expect("Constraint should be named if it is a ForeignKeyViolation")
                             .to_string(),
                     };
                 }
-                AddHomiesFavoriteRestaurantError::UnknownDbError(sqlx::Error::Database(db_error))
+                RemoveHomiesFavoriteRestaurantError::UnknownDbError(sqlx::Error::Database(db_error))
             }
-            sqlx::Error::RowNotFound => AddHomiesFavoriteRestaurantError::NoFavoriteAdded,
-            _ => AddHomiesFavoriteRestaurantError::UnknownDbError(e),
+            sqlx::Error::RowNotFound => RemoveHomiesFavoriteRestaurantError::NoFavoriteRemoved,
+            _ => RemoveHomiesFavoriteRestaurantError::UnknownDbError(e),
         })?;
 
     Ok(())
 }
 
 #[derive(Debug)]
-struct AddFavoriteRestaurantToHomieParams {
+struct RemoveFavoriteRestaurantFromHomieParams {
     user_id: UserId,
     name: HomiesName,
     restaurant_name: RestaurantName,
 }
 
-impl AddFavoriteRestaurantToHomieParams {
+impl RemoveFavoriteRestaurantFromHomieParams {
     fn new(user_id: UserId, name: HomiesName, restaurant_name: RestaurantName) -> Self {
         Self {
             user_id,
@@ -75,15 +75,15 @@ impl AddFavoriteRestaurantToHomieParams {
 }
 
 #[derive(Error, Debug)]
-pub enum AddHomiesFavoriteRestaurantError {
+pub enum RemoveHomiesFavoriteRestaurantError {
     #[error(transparent)]
     HomieNameValidationError(#[from] HomieNameValidationError),
 
     #[error(transparent)]
     RestaurantNameValidationError(#[from] RestaurantNameValidationError),
 
-    #[error("No favorite added")]
-    NoFavoriteAdded,
+    #[error("No favorite removed")]
+    NoFavoriteRemoved,
 
     #[error("Invalid User")]
     ForeignKeyViolation { constraint: String },
@@ -101,41 +101,42 @@ pub enum AddHomiesFavoriteRestaurantError {
     Unknown,
 }
 
-pub trait AddFavoriteRestaurantToHomie {
-    async fn add_homies_favorite_restaurant<'a>(
+pub trait RemoveFavoriteRestaurantFromHomie {
+    async fn remove_homies_favorite_restaurant<'a>(
         &self,
-        params: &AddFavoriteRestaurantToHomieParams,
+        params: &RemoveFavoriteRestaurantFromHomieParams,
     ) -> Result<(), sqlx::Error>;
 }
 
 #[cfg(feature = "postgres")]
-impl AddFavoriteRestaurantToHomie for Pool<Postgres> {
+impl RemoveFavoriteRestaurantFromHomie for Pool<Postgres> {
     #[tracing::instrument(skip(self))]
-    async fn add_homies_favorite_restaurant<'a>(
+    async fn remove_homies_favorite_restaurant<'a>(
         &self,
-        params: &AddFavoriteRestaurantToHomieParams,
+        params: &RemoveFavoriteRestaurantFromHomieParams,
     ) -> Result<(), sqlx::Error> {
+        dbg!(params);
         _ = sqlx::query!(
             r#"
-                insert into homies_favorite_restaurants (homie_id, user_id, restaurant_id)
-                select 
-                    h.id, 
-                    $1,
-                    r.id
-                from homies h
-                join restaurants r on r.name = $3 and r.user_id = $1
-                where h.name = $2 and h.user_id = $1
-                limit 1
-                returning *;
-                ;
-            "#,
+delete
+from homies_favorite_restaurants t
+
+where exists (select distinct 1
+              from homies_favorite_restaurants f
+                       inner join homies h on h.name = $2 and h.id = f.homie_id
+                       inner join restaurants r on r.name = $3 and r.id = f.restaurant_id
+              where f.user_id = $1 
+                and t.user_id = f.user_id
+                and t.homie_id = f.homie_id
+                and t.restaurant_id = f.restaurant_id);
+"#,
             params.user_id.as_i32(),
             params.name.as_str(),
             params.restaurant_name.as_str()
         )
-        .fetch_one(self)
+        .execute(self)
         .instrument(tracing::info_span!(
-            "Adding favorite restaurant to homie db query"
+            "Removing favorite restaurant to homie db query"
         ))
         .await?;
         Ok(())
@@ -143,27 +144,30 @@ impl AddFavoriteRestaurantToHomie for Pool<Postgres> {
 }
 
 #[cfg(feature = "sqlite")]
-impl AddFavoriteRestaurantToHomie for Pool<Sqlite> {
+impl RemoveFavoriteRestaurantFromHomie for Pool<Sqlite> {
     #[tracing::instrument(skip(self))]
-    async fn add_homies_favorite_restaurant<'a>(
+    async fn remove_homies_favorite_restaurant<'a>(
         &self,
-        params: &AddFavoriteRestaurantToHomieParams,
+        params: &RemoveFavoriteRestaurantFromHomieParams,
     ) -> Result<(), sqlx::Error> {
         let user_id = params.user_id.as_i32();
         let restaurant_name = params.restaurant_name.as_str();
+        todo!();
         let homie_name = params.name.as_str();
         _ = sqlx::query!(
             r#"
-                insert into homies_favorite_restaurants (homie_id, user_id, restaurant_id)
-                select 
-                    h.id, 
-                    ?,
-                    r.id
-                from homies h
-                join restaurants r on r.name = ? and r.user_id = ?
-                where h.name = ? and h.user_id =? 
-                limit 1
-                returning *;
+select *
+from homies_favorite_restaurants
+where exists (select homies.id,
+                     1,
+                     restaurants.id
+              from homies
+                       join restaurants on restaurants.name = ? and restaurants.user_id = 1
+              where homies.name = ?
+                and homies.user_id = 1
+                and homies_favorite_restaurants.homie_id = homies.id
+                and homies_favorite_restaurants.restaurant_id = restaurants.id
+                and homies_favorite_restaurants.user_id = ?);
                 ;
             "#,
             user_id,
@@ -174,7 +178,7 @@ impl AddFavoriteRestaurantToHomie for Pool<Sqlite> {
         )
         .fetch_one(self)
         .instrument(tracing::info_span!(
-            "Adding favorite restaurant to homie db query"
+            "Removeing favorite restaurant to homie db query"
         ))
         .await?;
         Ok(())

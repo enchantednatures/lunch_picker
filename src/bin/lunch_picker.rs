@@ -2,6 +2,9 @@
 
 use anyhow::Result;
 use clap::Parser;
+use lunch_picker::add_homies_favorite_restaurants_interactive;
+use lunch_picker::add_homies_interactive;
+use lunch_picker::add_restaurants_interactive;
 use lunch_picker::cli_args::AddRestaurant;
 use lunch_picker::cli_args::CliArgs;
 use lunch_picker::cli_args::Command;
@@ -17,6 +20,7 @@ use lunch_picker::features::create_homie;
 use lunch_picker::features::create_restaurant;
 use lunch_picker::features::get_all_homies;
 use lunch_picker::features::get_candidate_restaurants;
+use lunch_picker::features::remove_homies_favorite_restaurant;
 use lunch_picker::features::Homie;
 use lunch_picker::get_home_homies;
 use lunch_picker::select_restaurant;
@@ -26,9 +30,18 @@ use opentelemetry_otlp::WithExportConfig;
 use opentelemetry_sdk::runtime;
 use opentelemetry_sdk::trace::config;
 use opentelemetry_sdk::Resource;
+
+#[cfg(feature = "postgres")]
 use sqlx::postgres::PgPoolOptions;
+
+#[cfg(feature = "sqlite")]
+use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::Pool;
+
+#[cfg(feature = "postgres")]
 use sqlx::Postgres;
+#[cfg(feature = "sqlite")]
+use sqlx::Sqlite;
 use tracing::event;
 use tracing::Instrument;
 use tracing::Level;
@@ -58,21 +71,42 @@ pub(crate) fn init_tracer() -> Result<opentelemetry_sdk::trace::Tracer, TraceErr
 }
 
 struct AppState {
+    #[cfg(feature = "postgres")]
     db: Pool<Postgres>,
+
+    #[cfg(feature = "sqlite")]
+    db: Pool<Sqlite>,
 }
 
 impl AppState {
+    #[cfg(feature = "postgres")]
     fn new(db: Pool<Postgres>) -> Self {
+        Self { db }
+    }
+
+    #[cfg(feature = "sqlite")]
+    fn new(db: Pool<Sqlite>) -> Self {
         Self { db }
     }
 
     #[tracing::instrument(name = "User Interaction", skip(self))]
     async fn work(&self) -> Result<()> {
-        let homies: Vec<Homie> = get_all_homies(1, &self.db).await?;
-        let home_homies = get_home_homies(&homies).await;
-        let restaurants = get_candidate_restaurants(home_homies.clone(), 1, &self.db).await?;
+        let mut homies: Vec<Homie> = get_all_homies(1, &self.db).await?;
+        if homies.is_empty() {
+            event!(Level::ERROR, "No homies found");
+            homies = add_homies_interactive(CLI_USER_ID, &self.db).await?;
+            add_restaurants_interactive(CLI_USER_ID, &self.db).await?;
+        }
 
-        let selected = select_restaurant(&restaurants).await;
+        let home_homies = get_home_homies(&homies).await?;
+        let mut restaurants = get_candidate_restaurants(home_homies.clone(), 1, &self.db).await?;
+        if (restaurants.is_empty()) {
+            event!(Level::ERROR, "No candidate restaurants found");
+            add_restaurants_interactive(CLI_USER_ID, &self.db).await?;
+            restaurants = get_candidate_restaurants(home_homies.clone(), 1, &self.db).await?;
+        }
+
+        let selected = select_restaurant(&restaurants).await?;
 
         event!(
             Level::INFO,
@@ -83,6 +117,13 @@ impl AppState {
         add_recent_restaurant_for_homies(home_homies, selected.id, CLI_USER_ID, &self.db).await?;
 
         Ok(())
+    }
+}
+
+impl Drop for AppState {
+    fn drop(&mut self) {
+        self.db.close();
+        opentelemetry::global::shutdown_tracer_provider();
     }
 }
 
@@ -104,7 +145,16 @@ async fn main() -> Result<()> {
     dbg!(&args);
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
+    #[cfg(feature = "postgres")]
     let db = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&database_url)
+        .instrument(tracing::info_span!("database connection"))
+        .await
+        .expect("can't connect to database");
+
+    #[cfg(feature = "sqlite")]
+    let db = SqlitePoolOptions::new()
         .max_connections(5)
         .connect(&database_url)
         .instrument(tracing::info_span!("database connection"))
@@ -147,7 +197,15 @@ async fn main() -> Result<()> {
                             restaurant_name, homie_name
                         )
                     }
-                    _ => println!("Restaurant command"),
+                    AddRestaurant::Delete {
+                        homie_name,
+                        restaurant_name,
+                    } => remove_homies_favorite_restaurant(
+                        homie_name,
+                        restaurant_name,
+                        CLI_USER_ID,
+                        &app_state.db,
+                    ).await?,
                 },
                 Homies::RecentRestaurant(restaurant_command) => match restaurant_command {
                     AddRestaurant::Add {
@@ -162,8 +220,22 @@ async fn main() -> Result<()> {
                         )
                         .await?;
                     }
-                    _ => println!("Restaurant command"),
+                    AddRestaurant::Delete {
+                        homie_name,
+                        restaurant_name,
+                    } => {
+                        remove_homies_favorite_restaurant(
+                            homie_name,
+                            restaurant_name,
+                            CLI_USER_ID,
+                            &app_state.db,
+                        )
+                        .await?
+                    } // _ => println!("Restaurant command"),
                 },
+                Homies::Interactive => {
+                    add_homies_favorite_restaurants_interactive(CLI_USER_ID, &app_state.db).await?;
+                }
             },
 
             Command::Restaurants(restaurant_command) => match restaurant_command {
@@ -187,7 +259,7 @@ async fn main() -> Result<()> {
         None => app_state.work().await?,
     }
 
-    app_state.db.close().await;
-    opentelemetry::global::shutdown_tracer_provider();
+    // app_state.db.close().await;
+    // opentelemetry::global::shutdown_tracer_provider();
     Ok(())
 }

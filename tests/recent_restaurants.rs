@@ -3,12 +3,15 @@ use lunch_picker::features::add_recent_restaurant_for_homie;
 use sqlx::PgPool;
 
 #[cfg_attr(not(feature = "postgres_tests"), ignore)]
-#[sqlx::test(fixtures(
-    "homies",
-    "restaurants",
-    "homies_favorite_restaurants",
-    "recent_restaurants"
-))]
+#[sqlx::test(
+    migrator = "lunch_picker::MIGRATOR",
+    fixtures(
+        "homies",
+        "restaurants",
+        "homies_favorite_restaurants",
+        "recent_restaurants"
+    )
+)]
 async fn duplicate_cannot_be_added(pool: PgPool) -> Result<()> {
     let actual =
         add_recent_restaurant_for_homie("Alice".to_string(), "Pizza".to_string(), -1, &pool).await;
@@ -21,12 +24,15 @@ async fn duplicate_cannot_be_added(pool: PgPool) -> Result<()> {
 }
 
 #[cfg_attr(not(feature = "postgres_tests"), ignore)]
-#[sqlx::test(fixtures(
-    "homies",
-    "restaurants",
-    "homies_favorite_restaurants",
-    "recent_restaurants"
-))]
+#[sqlx::test(
+    migrator = "lunch_picker::MIGRATOR",
+    fixtures(
+        "homies",
+        "restaurants",
+        "homies_favorite_restaurants",
+        "recent_restaurants"
+    )
+)]
 async fn valid(pool: PgPool) -> Result<()> {
     Ok(
         add_recent_restaurant_for_homie("Ringo".to_string(), "Pizza".to_string(), -1, &pool)
@@ -35,12 +41,15 @@ async fn valid(pool: PgPool) -> Result<()> {
 }
 
 #[cfg_attr(not(feature = "postgres_tests"), ignore)]
-#[sqlx::test(fixtures(
-    "homies",
-    "restaurants",
-    "homies_favorite_restaurants",
-    "recent_restaurants"
-))]
+#[sqlx::test(
+    migrator = "lunch_picker::MIGRATOR",
+    fixtures(
+        "homies",
+        "restaurants",
+        "homies_favorite_restaurants",
+        "recent_restaurants"
+    )
+)]
 async fn no_recents_are_added_for_non_existant_homies(pool: PgPool) -> Result<()> {
     let actual =
         add_recent_restaurant_for_homie("Bobbert".to_string(), "Pizza".to_string(), -1, &pool)

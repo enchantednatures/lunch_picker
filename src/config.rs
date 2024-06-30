@@ -1,5 +1,4 @@
 use serde::Deserialize;
-use std::convert::{TryFrom, TryInto};
 use std::fmt::Debug;
 use std::path::{Path, PathBuf};
 use thiserror::Error;
@@ -11,12 +10,13 @@ pub struct Settings {
 
 #[derive(Deserialize, Clone)]
 pub enum DatabaseSettings {
-    #[cfg_attr(feature = "postgres", ignore)]
+    #[cfg(feature = "postgres")]
     Postgres(PostgresSettings),
+    #[cfg(feature = "sqlite")]
     Sqlite(SqliteSettings),
 }
 
-#[cfg_attr(feature = "postgres", ignore)]
+#[cfg(feature = "postgres")]
 #[derive(Deserialize, Clone)]
 pub struct PostgresSettings {
     pub host: String,
@@ -26,7 +26,7 @@ pub struct PostgresSettings {
     pub database_name: String,
 }
 
-#[cfg_attr(feature = "sqlite", ignore)]
+#[cfg(feature = "sqlite")]
 #[derive(Deserialize, Clone)]
 pub struct SqliteSettings {
     pub filename: PathBuf,

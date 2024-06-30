@@ -3,9 +3,12 @@ name = "lunch_picker"
 version = "0.1.0"
 edition = "2021"
 
+[profile.dev.package.sqlx-macros]
+opt-level = 3
+
 [features]
 default = ["postgres"] # soon to be sqlite
-postgres_tests = ["postgres"]
+postgres_tests = ["postgres" , "sqlx/migrate"]
 postgres = ["sqlx/postgres"]
 sqlite = ["sqlx/sqlite"]
 

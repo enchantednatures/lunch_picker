@@ -3,12 +3,15 @@ use lunch_picker::features::get_candidate_restaurants;
 use sqlx::PgPool;
 
 #[cfg_attr(not(feature = "postgres_tests"), ignore)]
-#[sqlx::test(fixtures(
-    "homies",
-    "restaurants",
-    "homies_favorite_restaurants",
-    "recent_restaurants"
-))]
+#[sqlx::test(
+    migrator = "lunch_picker::MIGRATOR",
+    fixtures(
+        "homies",
+        "restaurants",
+        "homies_favorite_restaurants",
+        "recent_restaurants"
+    )
+)]
 async fn test_restaurant_candidates(pool: PgPool) -> Result<()> {
     let home_homies: Vec<_> = vec![-1, -2];
 

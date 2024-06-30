@@ -69,6 +69,7 @@ trait CreateRecipe {
     async fn create_recipe(&self, params: CreateRecipeParams) -> Result<Recipe, CreateRecipeError>;
 }
 
+#[cfg(feature = "postgres")]
 impl CreateRecipe for Pool<Postgres> {
     #[tracing::instrument(skip(self))]
     async fn create_recipe(&self, params: CreateRecipeParams) -> Result<Recipe, CreateRecipeError> {

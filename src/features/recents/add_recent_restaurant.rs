@@ -1,6 +1,11 @@
 use std::fmt::Debug;
 
-use sqlx::{Pool, Postgres};
+use sqlx::Pool;
+
+#[cfg(feature = "postgres")]
+use sqlx::Postgres;
+#[cfg(feature = "sqlite")]
+use sqlx::Sqlite;
 use thiserror::Error;
 use tracing::event;
 use tracing::Instrument;
@@ -166,6 +171,7 @@ trait AddRecentRestaurantToHomie {
     ) -> Result<(), sqlx::Error>;
 }
 
+#[cfg(feature = "postgres")]
 impl AddRecentRestaurantToHomie for Pool<Postgres> {
     #[tracing::instrument(skip(self))]
     async fn add_recent_restaurant_for_homie<'a>(
@@ -227,5 +233,52 @@ from home_homies hh
         ))
         .await?;
         Ok(())
+    }
+}
+
+#[cfg(feature = "sqlite")]
+impl AddRecentRestaurantToHomie for Pool<Sqlite> {
+    #[tracing::instrument(skip(self))]
+    async fn add_recent_restaurant_for_homie<'a>(
+        &self,
+        params: &AddRecentRestaurantToHomieParams,
+    ) -> Result<(), sqlx::Error> {
+        let user_id = params.user_id.as_i32();
+        let restaurant_name = params.restaurant_name.as_str();
+        let homie_name = params.name.as_str();
+        _ = sqlx::query!(
+            r#"
+                insert into recent_restaurants (homie_id, user_id, restaurant_id)
+                select 
+                    h.id, 
+                    ?,
+                    r.id
+                from homies h
+                join restaurants r on r.name = ? and r.user_id =? 
+                where h.name = ? and h.user_id =? 
+                limit 1
+                returning *;
+            "#,
+            user_id,
+            restaurant_name,
+            user_id,
+            homie_name,
+            user_id,
+        )
+        .fetch_one(self)
+        .instrument(tracing::info_span!(
+            "Adding recent restaurant to homie db query"
+        ))
+        .await?;
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn add_recent_restaurant_for_homies<'a>(
+        &self,
+        params: &'a AddRecentRestaurantToHomiesParams<'a>,
+    ) -> Result<(), sqlx::Error> {
+        let homie_ids: Vec<i32> = params.homies_ids.iter().map(|x| x.as_i32()).collect();
+        todo!()
     }
 }
