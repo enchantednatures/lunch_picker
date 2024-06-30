@@ -69,7 +69,7 @@ impl SettingsBuilder {
                 let settings = std::fs::read_to_string(config_file)?;
                 Ok(serde_json::from_str(&settings)?)
             }
-            false => return Err(ConfigError::Unknown),
+            false => Err(ConfigError::Unknown),
         }
     }
 }

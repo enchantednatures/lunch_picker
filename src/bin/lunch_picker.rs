@@ -100,7 +100,7 @@ impl AppState {
 
         let home_homies = get_home_homies(&homies).await?;
         let mut restaurants = get_candidate_restaurants(home_homies.clone(), 1, &self.db).await?;
-        if (restaurants.is_empty()) {
+        if restaurants.is_empty() {
             event!(Level::ERROR, "No candidate restaurants found");
             add_restaurants_interactive(CLI_USER_ID, &self.db).await?;
             restaurants = get_candidate_restaurants(home_homies.clone(), 1, &self.db).await?;
@@ -200,12 +200,15 @@ async fn main() -> Result<()> {
                     AddRestaurant::Delete {
                         homie_name,
                         restaurant_name,
-                    } => remove_homies_favorite_restaurant(
-                        homie_name,
-                        restaurant_name,
-                        CLI_USER_ID,
-                        &app_state.db,
-                    ).await?,
+                    } => {
+                        remove_homies_favorite_restaurant(
+                            homie_name,
+                            restaurant_name,
+                            CLI_USER_ID,
+                            &app_state.db,
+                        )
+                        .await?
+                    }
                 },
                 Homies::RecentRestaurant(restaurant_command) => match restaurant_command {
                     AddRestaurant::Add {

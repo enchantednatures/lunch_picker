@@ -49,8 +49,7 @@ async fn no_favorites_are_added_for_non_existant_homies(pool: PgPool) -> Result<
     fixtures("homies", "restaurants", "homies_favorite_restaurants")
 )]
 async fn duplicate_cannot_be_removed(pool: PgPool) -> Result<()> {
-    let actual = remove_homies_favorite_restaurant("Alice".to_string(), "Pizza".to_string(), -1, &pool)
-            .await?;
+    remove_homies_favorite_restaurant("Alice".to_string(), "Pizza".to_string(), -1, &pool).await?;
 
     Ok(())
 }

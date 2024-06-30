@@ -17,7 +17,7 @@ use crate::user::UserId;
 pub async fn create_restaurant(
     restaurant_name: String,
     user_id: impl Into<UserId> + Debug,
-    db: &impl CreateRestaurant
+    db: &impl CreateRestaurant,
 ) -> Result<Restaurant, CreateRestaurantError> {
     let restaurant = CreateRestaurantParams::new(user_id.into(), &restaurant_name);
 
@@ -102,7 +102,6 @@ impl CreateRestaurant for Pool<Postgres> {
         Ok(restaurant.into())
     }
 }
-
 
 #[cfg(feature = "sqlite")]
 impl CreateRestaurant for Pool<Sqlite> {

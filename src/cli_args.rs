@@ -87,7 +87,7 @@ pub enum Homies {
 
     /// Manage Favorites for a Homie Interactively
     #[clap(visible_alias = "i")]
-    Interactive
+    Interactive,
 }
 
 #[derive(Subcommand, Debug)]

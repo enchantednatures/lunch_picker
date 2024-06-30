@@ -108,7 +108,6 @@ impl CreateHomie for Pool<Postgres> {
     }
 }
 
-
 #[cfg(feature = "sqlite")]
 impl CreateHomie for Pool<Sqlite> {
     #[tracing::instrument(skip(self, params))]
