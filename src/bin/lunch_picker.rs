@@ -13,7 +13,7 @@ use lunch_picker::features::add_homies_favorite_restaurant;
 use lunch_picker::features::add_recent_restaurant_for_homie;
 use lunch_picker::features::add_recent_restaurant_for_homies;
 use lunch_picker::features::create_homie;
-use lunch_picker::features::create_recipe;
+// use lunch_picker::features::create_recipe;
 use lunch_picker::features::create_restaurant;
 use lunch_picker::features::get_all_homies;
 use lunch_picker::features::get_candidate_restaurants;
@@ -178,7 +178,7 @@ async fn main() -> Result<()> {
             },
             Command::Recipes(recipe_command) => match recipe_command {
                 Recipes::Add { recipe_name } => {
-                    _ = create_recipe(recipe_name, 1, &app_state.db).await?;
+                    // _ = create_recipe(recipe_name, 1, &app_state.db).await?;
                 }
                 _ => println!("Recipe command"),
             },

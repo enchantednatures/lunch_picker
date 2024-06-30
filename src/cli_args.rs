@@ -9,6 +9,18 @@ pub struct CliArgs {
     #[command(subcommand)]
     pub command: Option<Command>,
 
+    /// Specify path to config file
+    #[arg(
+            long,
+            short,
+            require_equals = false,
+            value_name = "config_path",
+            default_value_t = String::from("~/.config/lunch-picker/config.toml"),
+            // default_missing_value = "always",
+            value_parser
+        )]
+    pub config_path: String,
+
     /// Specify emitting additional debug information
     #[clap(short, long, value_parser)]
     pub debug: bool,
@@ -19,9 +31,11 @@ pub enum Command {
     #[command(subcommand)]
     Homies(Homies),
 
+    /// Operations related to Recipes
     #[command(subcommand)]
     Recipes(Recipes),
 
+    /// Operations related to Restaurants
     #[command(subcommand)]
     Restaurants(Restaurants),
 

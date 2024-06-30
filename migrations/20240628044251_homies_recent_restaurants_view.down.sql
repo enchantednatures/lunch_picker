@@ -1,1 +1,0 @@
-drop view homies_recents_restaurants_view;

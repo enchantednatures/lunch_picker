@@ -5,5 +5,6 @@ pub mod db;
 pub mod features;
 mod interaction;
 pub mod user;
+mod config;
 
 pub use interaction::*;
