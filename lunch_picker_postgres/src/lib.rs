@@ -1,14 +1,18 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+#![allow(async_fn_in_trait)]
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+mod get_homie_by_name;
+mod homies;
+mod homies_favorites;
+mod recents;
+// mod recipes;
+mod restaurants;
+mod read_homie {}
+mod update_homie {}
+mod delete_homie {}
+mod remove_favorite_from_homie {}
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub use homies::*;
+pub use homies_favorites::*;
+pub use recents::*;
+// pub use recipes::*;
+pub use restaurants::*;

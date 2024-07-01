@@ -1,3 +1,5 @@
+#![allow(async_fn_in_trait)]
+
 mod get_homie_by_name;
 mod homies;
 mod homies_favorites;

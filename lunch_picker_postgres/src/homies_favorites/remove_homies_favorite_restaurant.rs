@@ -1,5 +1,13 @@
 use std::fmt::Debug;
+
+use sqlx::Pool;
+
+#[cfg(feature = "postgres")]
+use sqlx::Postgres;
+#[cfg(feature = "sqlite")]
+use sqlx::Sqlite;
 use thiserror::Error;
+use tracing::Instrument;
 
 use crate::HomieNameValidationError;
 use crate::HomiesName;
@@ -93,10 +101,81 @@ pub enum RemoveHomiesFavoriteRestaurantError {
     Unknown,
 }
 
-// todo: make this not return a sqlx error
 pub trait RemoveFavoriteRestaurantFromHomie {
     async fn remove_homies_favorite_restaurant<'a>(
         &self,
         params: &RemoveFavoriteRestaurantFromHomieParams,
     ) -> Result<(), sqlx::Error>;
+}
+
+#[cfg(feature = "postgres")]
+impl RemoveFavoriteRestaurantFromHomie for Pool<Postgres> {
+    #[tracing::instrument(skip(self))]
+    async fn remove_homies_favorite_restaurant<'a>(
+        &self,
+        params: &RemoveFavoriteRestaurantFromHomieParams,
+    ) -> Result<(), sqlx::Error> {
+        dbg!(params);
+        _ = sqlx::query!(
+            r#"
+delete
+from homies_favorite_restaurants t
+
+where exists (select distinct 1
+              from homies_favorite_restaurants f
+                       inner join homies h on h.name = $2 and h.id = f.homie_id
+                       inner join restaurants r on r.name = $3 and r.id = f.restaurant_id
+              where f.user_id = $1 
+                and t.user_id = f.user_id
+                and t.homie_id = f.homie_id
+                and t.restaurant_id = f.restaurant_id)
+returning *;
+"#,
+            params.user_id.as_i32(),
+            params.name.as_str(),
+            params.restaurant_name.as_str()
+        )
+        .fetch_one(self)
+        .instrument(tracing::info_span!(
+            "Removing favorite restaurant to homie db query"
+        ))
+        .await?;
+        Ok(())
+    }
+}
+
+#[cfg(feature = "sqlite")]
+impl RemoveFavoriteRestaurantFromHomie for Pool<Sqlite> {
+    #[tracing::instrument(skip(self))]
+    async fn remove_homies_favorite_restaurant<'a>(
+        &self,
+        params: &RemoveFavoriteRestaurantFromHomieParams,
+    ) -> Result<(), sqlx::Error> {
+        let user_id = params.user_id.as_i32();
+        let restaurant_name = params.restaurant_name.as_str();
+        let homie_name = params.name.as_str();
+        _ = sqlx::query!(
+            r#"
+delete
+from homies_favorite_restaurants
+where exists (select distinct 1
+    from homies_favorite_restaurants f
+    inner join homies h on h.name = ? and h.id = f.homie_id
+    inner join restaurants r on r.name = ? and r.id = f.restaurant_id
+    where f.user_id = ?
+  and homies_favorite_restaurants.user_id = f.user_id
+  and homies_favorite_restaurants.homie_id = f.homie_id
+  and homies_favorite_restaurants.restaurant_id = f.restaurant_id);
+            "#,
+            homie_name,
+            restaurant_name,
+            user_id
+        )
+        .execute(self)
+        .instrument(tracing::info_span!(
+            "Removeing favorite restaurant to homie db query"
+        ))
+        .await?;
+        Ok(())
+    }
 }

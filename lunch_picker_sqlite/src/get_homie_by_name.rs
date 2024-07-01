@@ -1,5 +1,8 @@
 use std::fmt::Debug;
 
+use sqlx::Pool;
+#[cfg(feature = "postgres")]
+use sqlx::Postgres;
 use thiserror::Error;
 
 use crate::Homie;
@@ -33,7 +36,7 @@ pub enum GetHomieError {
     DbError(#[from] sqlx::Error),
 }
 
-pub struct GetHomieParams<'a> {
+struct GetHomieParams<'a> {
     user_id: &'a i32,
     name: &'a str,
 }
@@ -43,9 +46,27 @@ impl<'a> GetHomieParams<'a> {
     }
 }
 
-pub trait GetHomie {
+trait GetHomie {
     async fn get_homie<'a>(
         &self,
         params: impl Into<GetHomieParams<'a>>,
     ) -> Result<Homie, sqlx::Error>;
+}
+
+#[cfg(feature = "postgres")]
+impl GetHomie for Pool<Postgres> {
+    async fn get_homie<'a>(
+        &self,
+        params: impl Into<GetHomieParams<'a>>,
+    ) -> Result<Homie, sqlx::Error> {
+        let params: GetHomieParams<'a> = params.into();
+        let homie: HomieRow = sqlx::query_as(
+            r#"SELECT id, user_id, name FROM homies WHERE name = $1 and user_id = $2"#,
+        )
+        .bind(params.name)
+        .bind(params.user_id)
+        .fetch_one(self)
+        .await?;
+        Ok(homie.into())
+    }
 }

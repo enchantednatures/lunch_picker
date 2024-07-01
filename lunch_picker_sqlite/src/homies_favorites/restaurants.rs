@@ -1,6 +1,13 @@
 use std::fmt::Debug;
 
+use sqlx::Pool;
+
+#[cfg(feature = "postgres")]
+use sqlx::Postgres;
+#[cfg(feature = "sqlite")]
+use sqlx::Sqlite;
 use thiserror::Error;
+use tracing::Instrument;
 
 use crate::HomieNameValidationError;
 use crate::HomiesName;
@@ -94,10 +101,82 @@ pub enum AddHomiesFavoriteRestaurantError {
     Unknown,
 }
 
-// todo: make this not return a sqlx error
 pub trait AddFavoriteRestaurantToHomie {
     async fn add_homies_favorite_restaurant<'a>(
         &self,
         params: &AddFavoriteRestaurantToHomieParams,
     ) -> Result<(), sqlx::Error>;
+}
+
+#[cfg(feature = "postgres")]
+impl AddFavoriteRestaurantToHomie for Pool<Postgres> {
+    #[tracing::instrument(skip(self))]
+    async fn add_homies_favorite_restaurant<'a>(
+        &self,
+        params: &AddFavoriteRestaurantToHomieParams,
+    ) -> Result<(), sqlx::Error> {
+        _ = sqlx::query!(
+            r#"
+                insert into homies_favorite_restaurants (homie_id, user_id, restaurant_id)
+                select 
+                    h.id, 
+                    $1,
+                    r.id
+                from homies h
+                join restaurants r on r.name = $3 and r.user_id = $1
+                where h.name = $2 and h.user_id = $1
+                limit 1
+                returning *;
+                ;
+            "#,
+            params.user_id.as_i32(),
+            params.name.as_str(),
+            params.restaurant_name.as_str()
+        )
+        .fetch_one(self)
+        .instrument(tracing::info_span!(
+            "Adding favorite restaurant to homie db query"
+        ))
+        .await?;
+        Ok(())
+    }
+}
+
+#[cfg(feature = "sqlite")]
+impl AddFavoriteRestaurantToHomie for Pool<Sqlite> {
+    #[tracing::instrument(skip(self))]
+    async fn add_homies_favorite_restaurant<'a>(
+        &self,
+        params: &AddFavoriteRestaurantToHomieParams,
+    ) -> Result<(), sqlx::Error> {
+        let user_id = params.user_id.as_i32();
+        let restaurant_name = params.restaurant_name.as_str();
+        let homie_name = params.name.as_str();
+        _ = sqlx::query!(
+            r#"
+                insert into homies_favorite_restaurants (homie_id, user_id, restaurant_id)
+                select 
+                    h.id, 
+                    ?,
+                    r.id
+                from homies h
+                join restaurants r on r.name = ? and r.user_id = ?
+                where h.name = ? and h.user_id =? 
+                limit 1
+                returning *;
+                ;
+            "#,
+            user_id,
+            restaurant_name,
+            user_id,
+            homie_name,
+            user_id
+        )
+        .fetch_one(self)
+        .instrument(tracing::info_span!(
+            "Adding favorite restaurant to homie db query"
+        ))
+        .await?;
+        Ok(())
+    }
 }

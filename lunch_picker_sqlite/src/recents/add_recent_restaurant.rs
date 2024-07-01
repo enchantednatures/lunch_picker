@@ -1,7 +1,14 @@
 use std::fmt::Debug;
 
+use sqlx::Pool;
+
+#[cfg(feature = "postgres")]
+use sqlx::Postgres;
+#[cfg(feature = "sqlite")]
+use sqlx::Sqlite;
 use thiserror::Error;
 use tracing::event;
+use tracing::Instrument;
 use tracing::Level;
 
 use crate::HomieId;
@@ -152,7 +159,6 @@ pub enum AddHomiesRecentRestaurantError {
     Unknown,
 }
 
-// todo: not a sqlx error
 trait AddRecentRestaurantToHomie {
     async fn add_recent_restaurant_for_homie<'a>(
         &self,
@@ -163,4 +169,144 @@ trait AddRecentRestaurantToHomie {
         &self,
         params: &'a AddRecentRestaurantToHomiesParams<'a>,
     ) -> Result<(), sqlx::Error>;
+}
+
+#[cfg(feature = "postgres")]
+impl AddRecentRestaurantToHomie for Pool<Postgres> {
+    #[tracing::instrument(skip(self))]
+    async fn add_recent_restaurant_for_homie<'a>(
+        &self,
+        params: &AddRecentRestaurantToHomieParams,
+    ) -> Result<(), sqlx::Error> {
+        _ = sqlx::query!(
+            r#"
+                insert into recent_restaurants (homie_id, user_id, restaurant_id)
+                select 
+                    h.id, 
+                    $1,
+                    r.id
+                from homies h
+                join restaurants r on r.name = $3 and r.user_id = $1
+                where h.name = $2 and h.user_id = $1
+                limit 1
+                returning *;
+            "#,
+            params.user_id.as_i32(),
+            params.name.as_str(),
+            params.restaurant_name.as_str()
+        )
+        .fetch_one(self)
+        .instrument(tracing::info_span!(
+            "Adding recent restaurant to homie db query"
+        ))
+        .await?;
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn add_recent_restaurant_for_homies<'a>(
+        &self,
+        params: &'a AddRecentRestaurantToHomiesParams<'a>,
+    ) -> Result<(), sqlx::Error> {
+        let homie_ids: Vec<i32> = params.homies_ids.iter().map(|x| x.as_i32()).collect();
+
+        sqlx::query!(
+            r#"
+with home_homies AS (select *
+                     from UNNEST($1::integer[]) as homie_id)
+insert
+into recent_restaurants (homie_id, user_id, restaurant_id)
+select h.id,
+       $2,
+       r.id
+from home_homies hh
+         join homies h on h.id = hh.homie_id
+         join restaurants r on r.id = $3;
+            "#,
+            &homie_ids,
+            params.user_id.as_i32(),
+            params.restaurant_id.as_i32()
+        )
+        .fetch_all(self)
+        .instrument(tracing::info_span!(
+            "Adding recent restaurant to homie db query"
+        ))
+        .await?;
+        Ok(())
+    }
+}
+
+#[cfg(feature = "sqlite")]
+impl AddRecentRestaurantToHomie for Pool<Sqlite> {
+    #[tracing::instrument(skip(self))]
+    async fn add_recent_restaurant_for_homie<'a>(
+        &self,
+        params: &AddRecentRestaurantToHomieParams,
+    ) -> Result<(), sqlx::Error> {
+        let user_id = params.user_id.as_i32();
+        let restaurant_name = params.restaurant_name.as_str();
+        let homie_name = params.name.as_str();
+        _ = sqlx::query!(
+            r#"
+                insert into recent_restaurants (homie_id, user_id, restaurant_id)
+                select 
+                    h.id, 
+                    ?,
+                    r.id
+                from homies h
+                join restaurants r on r.name = ? and r.user_id =? 
+                where h.name = ? and h.user_id =? 
+                limit 1
+                returning *;
+            "#,
+            user_id,
+            restaurant_name,
+            user_id,
+            homie_name,
+            user_id,
+        )
+        .fetch_one(self)
+        .instrument(tracing::info_span!(
+            "Adding recent restaurant to homie db query"
+        ))
+        .await?;
+        Ok(())
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn add_recent_restaurant_for_homies<'a>(
+        &self,
+        params: &'a AddRecentRestaurantToHomiesParams<'a>,
+    ) -> Result<(), sqlx::Error> {
+        let user_id = params.user_id.as_i32();
+        let restaurant_id = params.restaurant_id.as_i32();
+        let homie_ids: Vec<i32> = params.homies_ids.iter().map(|x| x.as_i32()).collect();
+
+        let homie_ids = serde_json::to_string(&homie_ids)
+            .expect("unable to serialize list of home homie ids as json");
+
+        _ = sqlx::query!(
+            r#"
+with home_homies AS (SELECT value as homie_id FROM json_each(?))
+insert
+into recent_restaurants (homie_id, user_id, restaurant_id)
+select h.id,
+       ?,
+       r.id
+from home_homies hh
+         join homies h on h.id = hh.homie_id
+         join restaurants r on r.id = ?;
+
+        "#,
+            homie_ids,
+            user_id,
+            restaurant_id
+        )
+        .execute(self)
+        .instrument(tracing::info_span!(
+            "Adding recent restaurant to homie db query"
+        ))
+        .await?;
+        Ok(())
+    }
 }
