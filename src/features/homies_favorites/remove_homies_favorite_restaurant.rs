@@ -125,13 +125,14 @@ where exists (select distinct 1
     where f.user_id = ?
   and homies_favorite_restaurants.user_id = f.user_id
   and homies_favorite_restaurants.homie_id = f.homie_id
-  and homies_favorite_restaurants.restaurant_id = f.restaurant_id);
+  and homies_favorite_restaurants.restaurant_id = f.restaurant_id)
+  returning *;
             "#,
             homie_name,
             restaurant_name,
             user_id
         )
-        .execute(self)
+        .fetch_one(self)
         .instrument(tracing::info_span!(
             "Removeing favorite restaurant to homie db query"
         ))
