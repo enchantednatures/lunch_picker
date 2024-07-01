@@ -7,11 +7,7 @@ edition = "2021"
 opt-level = 3
 
 [features]
-default = ["sqlite"] # soon to be sqlite
-postgres_tests = ["postgres" , "sqlx/migrate"]
-postgres = ["sqlx/postgres"]
-sqlite = ["sqlx/sqlite"]
-sqlite_tests = ["sqlite"]
+sqlite_tests = []
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
@@ -30,8 +26,8 @@ tracing-bunyan-formatter = "0.3"
 opentelemetry = { version = "0.23", features = ["trace"] }
 opentelemetry-stdout = { version = "0.4", features = ["trace"] }
 tracing-opentelemetry = "0.24"
-init-tracing-opentelemetry = { version = "0.18", features = [ "otlp", "tracing_subscriber_ext", ] }
-tracing-opentelemetry-instrumentation-sdk =  { version = "0.18" }
+init-tracing-opentelemetry = { version = "0.19", features = [ "otlp", "tracing_subscriber_ext", ] }
+tracing-opentelemetry-instrumentation-sdk =  { version = "0.19" }
 opentelemetry_sdk = {version="0.23" , features = ["rt-tokio"] }
 opentelemetry-otlp = { version = "0.16" , features = ["tonic", "default"] }
 futures = "*"
@@ -40,5 +36,5 @@ dirs = "5.0.1"
 
 [dependencies.sqlx]
 version = "0.7"
-features = ["runtime-tokio-rustls", "macros", "chrono", "uuid"]
+features = ["runtime-tokio-rustls", "macros", "chrono", "uuid", "sqlite"]
 

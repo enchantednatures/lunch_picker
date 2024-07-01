@@ -1,12 +1,12 @@
-#![cfg(feature = "postgres_tests")]
+#![cfg(feature = "sqlite_tests")]
 
 use anyhow::Result;
 use lunch_picker::features::add_recent_restaurant_for_homie;
-use sqlx::PgPool;
+use sqlx::SqlitePool;
 
-#[cfg_attr(not(feature = "postgres_tests"), ignore)]
+#[cfg_attr(not(feature = "sqlite_tests"), ignore)]
 #[sqlx::test(
-    migrator = "lunch_picker::MIGRATOR",
+    
     fixtures(
         "homies",
         "restaurants",
@@ -14,7 +14,7 @@ use sqlx::PgPool;
         "recent_restaurants"
     )
 )]
-async fn duplicate_cannot_be_added(pool: PgPool) -> Result<()> {
+async fn duplicate_cannot_be_added(pool: SqlitePool) -> Result<()> {
     let actual =
         add_recent_restaurant_for_homie("Alice".to_string(), "Pizza".to_string(), -1, &pool).await;
 
@@ -25,9 +25,9 @@ async fn duplicate_cannot_be_added(pool: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[cfg_attr(not(feature = "postgres_tests"), ignore)]
+#[cfg_attr(not(feature = "sqlite_tests"), ignore)]
 #[sqlx::test(
-    migrator = "lunch_picker::MIGRATOR",
+    
     fixtures(
         "homies",
         "restaurants",
@@ -35,16 +35,16 @@ async fn duplicate_cannot_be_added(pool: PgPool) -> Result<()> {
         "recent_restaurants"
     )
 )]
-async fn valid(pool: PgPool) -> Result<()> {
+async fn valid(pool: SqlitePool) -> Result<()> {
     Ok(
         add_recent_restaurant_for_homie("Ringo".to_string(), "Pizza".to_string(), -1, &pool)
             .await?,
     )
 }
 
-#[cfg_attr(not(feature = "postgres_tests"), ignore)]
+#[cfg_attr(not(feature = "sqlite_tests"), ignore)]
 #[sqlx::test(
-    migrator = "lunch_picker::MIGRATOR",
+    
     fixtures(
         "homies",
         "restaurants",
@@ -52,7 +52,7 @@ async fn valid(pool: PgPool) -> Result<()> {
         "recent_restaurants"
     )
 )]
-async fn no_recents_are_added_for_non_existant_homies(pool: PgPool) -> Result<()> {
+async fn no_recents_are_added_for_non_existant_homies(pool: SqlitePool) -> Result<()> {
     let actual =
         add_recent_restaurant_for_homie("Bobbert".to_string(), "Pizza".to_string(), -1, &pool)
             .await;

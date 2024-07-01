@@ -1,13 +1,13 @@
-#![cfg(feature = "postgres_tests")]
+#![cfg(feature = "sqlite_tests")]
 
 use anyhow::Result;
 use lunch_picker::features::get_candidate_restaurants;
 
-use sqlx::PgPool;
+use sqlx::SqlitePool;
 
-#[cfg_attr(not(feature = "postgres_tests"), ignore)]
+#[cfg_attr(not(feature = "sqlite_tests"), ignore)]
 #[sqlx::test(
-    migrator = "lunch_picker::MIGRATOR",
+    
     fixtures(
         "homies",
         "restaurants",
@@ -15,7 +15,7 @@ use sqlx::PgPool;
         "recent_restaurants"
     )
 )]
-async fn test_restaurant_candidates(pool: PgPool) -> Result<()> {
+async fn test_restaurant_candidates(pool: SqlitePool) -> Result<()> {
     let home_homies: Vec<_> = vec![-1, -2];
 
     let actual = get_candidate_restaurants(home_homies, 1, &pool).await?;

@@ -2,9 +2,6 @@ use std::fmt::Debug;
 
 use sqlx::Pool;
 
-#[cfg(feature = "postgres")]
-use sqlx::Postgres;
-#[cfg(feature = "sqlite")]
 use sqlx::Sqlite;
 use thiserror::Error;
 use tracing::Instrument;
@@ -51,36 +48,8 @@ pub trait GetHomiesFavoriteRestaurants {
     ) -> Result<Vec<Restaurant>, sqlx::Error>;
 }
 
-#[cfg(feature = "postgres")]
-impl GetHomiesFavoriteRestaurants for Pool<Postgres> {
-    #[tracing::instrument(name = "Getting all Restaurants", skip(self))]
-    async fn get_homies_favorite_restaurants(
-        &self,
-        params: &GetHomiesFavoriteRestaurantsParams,
-    ) -> Result<Vec<Restaurant>, sqlx::Error> {
-        let restaurant: Vec<RestaurantRow> = sqlx::query_as(
-            r#"
-select id, r.user_id, name
-from restaurants r
-         inner join  homies_favorite_restaurants
-              on r.id = homies_favorite_restaurants.restaurant_id
-                  and homies_favorite_restaurants.homie_id = $2
-                  and homies_favorite_restaurants.user_id = $1
-where r.user_id = $1
-"#,
-        )
-        .bind(params.user_id.as_i32())
-        .bind(params.homie_id.as_i32())
-        .fetch_all(self)
-        .instrument(tracing::info_span!("Querying all restaurants"))
-        .await?;
-        Ok(restaurant.into_iter().map(|x| x.into()).collect())
-    }
-}
-
 // todo: do we need the second user_id clause?
 // todo: does this only need to return a restaurant id?
-#[cfg(feature = "sqlite")]
 impl GetHomiesFavoriteRestaurants for Pool<Sqlite> {
     #[tracing::instrument(name = "Getting all Restaurants", skip(self))]
     async fn get_homies_favorite_restaurants(
