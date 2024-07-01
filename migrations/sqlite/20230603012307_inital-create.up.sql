@@ -7,7 +7,7 @@ create table users
 
 create table homies
 (
-    id serial primary key,
+    id integer primary key,
     user_id integer not null,
     name text not null check (
         length(name) = length(trim(name)) and length(name) > 0
@@ -20,7 +20,7 @@ create unique index homies_name_uindex on homies (user_id, name);
 
 create table restaurants
 (
-    id serial primary key,
+    id integer primary key,
     user_id integer not null,
     name text not null check (
         length(name) = length(trim(name)) and length(name) > 0

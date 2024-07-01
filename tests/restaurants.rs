@@ -1,3 +1,5 @@
+#![cfg(feature = "postgres_tests")]
+
 use anyhow::Result;
 use lunch_picker::features::create_restaurant;
 use sqlx::PgPool;

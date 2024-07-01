@@ -278,7 +278,35 @@ impl AddRecentRestaurantToHomie for Pool<Sqlite> {
         &self,
         params: &'a AddRecentRestaurantToHomiesParams<'a>,
     ) -> Result<(), sqlx::Error> {
+        let user_id = params.user_id.as_i32();
+        let restaurant_id = params.restaurant_id.as_i32();
         let homie_ids: Vec<i32> = params.homies_ids.iter().map(|x| x.as_i32()).collect();
-        todo!()
+
+        let homie_ids = serde_json::to_string(&homie_ids)
+            .expect("unable to serialize list of home homie ids as json");
+
+        _ = sqlx::query!(
+            r#"
+with home_homies AS (SELECT value as homie_id FROM json_each(?))
+insert
+into recent_restaurants (homie_id, user_id, restaurant_id)
+select h.id,
+       ?,
+       r.id
+from home_homies hh
+         join homies h on h.id = hh.homie_id
+         join restaurants r on r.id = ?;
+
+        "#,
+            homie_ids,
+            user_id,
+            restaurant_id
+        )
+        .execute(self)
+        .instrument(tracing::info_span!(
+            "Adding recent restaurant to homie db query"
+        ))
+        .await?;
+        Ok(())
     }
 }

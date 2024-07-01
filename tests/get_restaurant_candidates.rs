@@ -1,5 +1,9 @@
+#![cfg(feature = "postgres_tests")]
+
+
 use anyhow::Result;
 use lunch_picker::features::get_candidate_restaurants;
+
 use sqlx::PgPool;
 
 #[cfg_attr(not(feature = "postgres_tests"), ignore)]

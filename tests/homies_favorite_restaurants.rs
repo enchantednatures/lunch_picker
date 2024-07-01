@@ -1,3 +1,5 @@
+#![cfg(feature = "postgres_tests")]
+
 use anyhow::Result;
 use lunch_picker::features::add_homies_favorite_restaurant;
 use lunch_picker::features::remove_homies_favorite_restaurant;

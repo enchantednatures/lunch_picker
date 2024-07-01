@@ -13,6 +13,14 @@ use crate::features::{
 };
 use crate::user::UserId;
 
+#[tracing::instrument(name = "User Setup")]
+pub async fn user_setup() -> Result<()> {
+    let database_url = Input::<String>::new()
+        .with_prompt("Enter the database URL")
+        .default("sqlite:test.db".into())
+        .interact_text()?;
+    Ok(())
+}
 #[tracing::instrument(name = "User Adds Restaurants Interactively", skip(db))]
 pub async fn add_restaurants_interactive<T>(
     user_id: impl Into<UserId> + Debug,
