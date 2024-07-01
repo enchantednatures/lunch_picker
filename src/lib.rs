@@ -9,5 +9,3 @@ pub mod user;
 
 pub use config::*;
 pub use interaction::*;
-
-

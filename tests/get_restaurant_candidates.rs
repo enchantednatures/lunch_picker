@@ -6,15 +6,12 @@ use lunch_picker::features::get_candidate_restaurants;
 use sqlx::SqlitePool;
 
 #[cfg_attr(not(feature = "sqlite_tests"), ignore)]
-#[sqlx::test(
-    
-    fixtures(
-        "homies",
-        "restaurants",
-        "homies_favorite_restaurants",
-        "recent_restaurants"
-    )
-)]
+#[sqlx::test(fixtures(
+    "homies",
+    "restaurants",
+    "homies_favorite_restaurants",
+    "recent_restaurants"
+))]
 async fn test_restaurant_candidates(pool: SqlitePool) -> Result<()> {
     let home_homies: Vec<_> = vec![-1, -2];
 
