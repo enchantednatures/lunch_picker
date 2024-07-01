@@ -7,10 +7,7 @@ use lunch_picker::features::remove_homies_favorite_restaurant;
 use sqlx::SqlitePool;
 
 #[cfg_attr(not(feature = "sqlite_tests"), ignore)]
-#[sqlx::test(
-    
-    fixtures("homies", "restaurants", "homies_favorite_restaurants")
-)]
+#[sqlx::test(fixtures("homies", "restaurants", "homies_favorite_restaurants"))]
 async fn duplicate_cannot_be_added(pool: SqlitePool) -> Result<()> {
     let actual =
         add_homies_favorite_restaurant("Alice".to_string(), "Pizza".to_string(), -1, &pool).await;
@@ -23,19 +20,13 @@ async fn duplicate_cannot_be_added(pool: SqlitePool) -> Result<()> {
 }
 
 #[cfg_attr(not(feature = "sqlite_tests"), ignore)]
-#[sqlx::test(
-    
-    fixtures("homies", "restaurants", "homies_favorite_restaurants")
-)]
+#[sqlx::test(fixtures("homies", "restaurants", "homies_favorite_restaurants"))]
 async fn valid(pool: SqlitePool) -> Result<()> {
     Ok(add_homies_favorite_restaurant("Bob".to_string(), "Pizza".to_string(), -1, &pool).await?)
 }
 
 #[cfg_attr(not(feature = "sqlite_tests"), ignore)]
-#[sqlx::test(
-    
-    fixtures("homies", "restaurants", "homies_favorite_restaurants")
-)]
+#[sqlx::test(fixtures("homies", "restaurants", "homies_favorite_restaurants"))]
 async fn no_favorites_are_added_for_non_existant_homies(pool: SqlitePool) -> Result<()> {
     let actual =
         add_homies_favorite_restaurant("Bobberto".to_string(), "Pizza".to_string(), -1, &pool)
@@ -46,10 +37,7 @@ async fn no_favorites_are_added_for_non_existant_homies(pool: SqlitePool) -> Res
 }
 
 #[cfg_attr(not(feature = "sqlite_tests"), ignore)]
-#[sqlx::test(
-    
-    fixtures("homies", "restaurants", "homies_favorite_restaurants")
-)]
+#[sqlx::test(fixtures("homies", "restaurants", "homies_favorite_restaurants"))]
 async fn duplicate_cannot_be_removed(pool: SqlitePool) -> Result<()> {
     remove_homies_favorite_restaurant("Alice".to_string(), "Pizza".to_string(), -1, &pool).await?;
 
@@ -57,10 +45,7 @@ async fn duplicate_cannot_be_removed(pool: SqlitePool) -> Result<()> {
 }
 
 #[cfg_attr(not(feature = "sqlite_tests"), ignore)]
-#[sqlx::test(
-    
-    fixtures("homies", "restaurants", "homies_favorite_restaurants")
-)]
+#[sqlx::test(fixtures("homies", "restaurants", "homies_favorite_restaurants"))]
 async fn no_favorites_are_removed_for_non_existant_homies(pool: SqlitePool) -> Result<()> {
     let actual =
         remove_homies_favorite_restaurant("Bobberto".to_string(), "Pizza".to_string(), -1, &pool)

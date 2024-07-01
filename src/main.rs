@@ -91,6 +91,15 @@ impl AppState {
             restaurants = get_candidate_restaurants(home_homies.clone(), 1, &self.db).await?;
         }
 
+        if restaurants.is_empty() {
+            event!(
+                Level::ERROR,
+                "User did not add any restaurants that produced candidates"
+            );
+            add_restaurants_interactive(CLI_USER_ID, &self.db).await?;
+            restaurants = get_candidate_restaurants(home_homies.clone(), 1, &self.db).await?;
+        }
+
         let selected = select_restaurant(&restaurants).await?;
 
         event!(
@@ -132,7 +141,7 @@ async fn main() -> Result<()> {
         }
         false => {
             let settings = user_setup()?;
-            fs::write(config_file, serde_json::to_string_pretty(&settings)?);
+            fs::write(config_file, serde_json::to_string_pretty(&settings)?)?;
             settings
         }
     };

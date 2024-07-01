@@ -5,7 +5,7 @@ use lunch_picker::features::create_homie;
 use sqlx::SqlitePool;
 
 #[cfg_attr(not(feature = "sqlite_tests"), ignore)]
-#[sqlx::test( fixtures("homies"))]
+#[sqlx::test(fixtures("homies"))]
 async fn test_add_existing_homie_fails(pool: SqlitePool) -> Result<()> {
     let actual = create_homie("Alice".to_string(), -1, &pool).await;
 
@@ -17,7 +17,7 @@ async fn test_add_existing_homie_fails(pool: SqlitePool) -> Result<()> {
 }
 
 #[cfg_attr(not(feature = "sqlite_tests"), ignore)]
-#[sqlx::test( fixtures("homies"))]
+#[sqlx::test(fixtures("homies"))]
 async fn test_add_homie(pool: SqlitePool) -> Result<()> {
     let result = create_homie("Markus".to_string(), -1, &pool).await?;
 

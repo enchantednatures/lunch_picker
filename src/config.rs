@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-use std::path::{PathBuf};
+use std::path::PathBuf;
 use std::str::FromStr;
 use thiserror::Error;
-
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Settings {

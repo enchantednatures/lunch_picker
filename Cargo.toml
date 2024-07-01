@@ -3,6 +3,12 @@ name = "lunch_picker"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release]
+panic = 'abort'
+codegen-units = 1
+opt-level = 's' # or 'z' to optimize "aggressively" for size
+lto = true
+
 [profile.dev.package.sqlx-macros]
 opt-level = 3
 

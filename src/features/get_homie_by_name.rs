@@ -48,4 +48,3 @@ trait GetHomie {
         params: impl Into<GetHomieParams<'a>>,
     ) -> Result<Homie, sqlx::Error>;
 }
-
