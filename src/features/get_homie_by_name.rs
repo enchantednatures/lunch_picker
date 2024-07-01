@@ -1,12 +1,10 @@
 use std::fmt::Debug;
 
-use sqlx::Pool;
 #[cfg(feature = "postgres")]
 use sqlx::Postgres;
 use thiserror::Error;
 
 use crate::features::Homie;
-use crate::features::HomieRow;
 use crate::user::UserId;
 
 use super::HomieNameValidationError;

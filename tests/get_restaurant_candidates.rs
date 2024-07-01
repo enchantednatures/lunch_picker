@@ -1,6 +1,5 @@
 #![cfg(feature = "postgres_tests")]
 
-
 use anyhow::Result;
 use lunch_picker::features::get_candidate_restaurants;
 

@@ -145,9 +145,9 @@ impl SettingsBuilder {
             false => {
                 fs::write(
                     config_file,
-                    &serde_json::to_string_pretty(&Settings::default()).unwrap(),
+                    serde_json::to_string_pretty(&Settings::default()).unwrap(),
                 );
-                return Ok(Settings::default());
+                Ok(Settings::default())
             }
         }
     }
