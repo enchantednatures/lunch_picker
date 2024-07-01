@@ -1,7 +1,5 @@
 use std::fmt::Debug;
 
-#[cfg(feature = "postgres")]
-use sqlx::Postgres;
 use thiserror::Error;
 
 use crate::features::Homie;
@@ -51,20 +49,3 @@ trait GetHomie {
     ) -> Result<Homie, sqlx::Error>;
 }
 
-#[cfg(feature = "postgres")]
-impl GetHomie for Pool<Postgres> {
-    async fn get_homie<'a>(
-        &self,
-        params: impl Into<GetHomieParams<'a>>,
-    ) -> Result<Homie, sqlx::Error> {
-        let params: GetHomieParams<'a> = params.into();
-        let homie: HomieRow = sqlx::query_as(
-            r#"SELECT id, user_id, name FROM homies WHERE name = $1 and user_id = $2"#,
-        )
-        .bind(params.name)
-        .bind(params.user_id)
-        .fetch_one(self)
-        .await?;
-        Ok(homie.into())
-    }
-}

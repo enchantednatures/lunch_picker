@@ -33,71 +33,33 @@ impl Default for Settings {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum DatabaseSettings {
-    #[cfg(feature = "postgres")]
-    Postgres(PostgresSettings),
-    #[cfg(feature = "sqlite")]
     Sqlite(SqliteSettings),
 }
 
 impl Default for DatabaseSettings {
     fn default() -> Self {
-        #[cfg(feature = "postgres")]
-        return Self::Postgres(PostgresSettings {
-            host: "localhost".into(),
-            port: 5432,
-            username: "postgres".into(),
-            password: "password".into(),
-            database_name: "lunch_picker".into(),
-        });
-        #[cfg(feature = "sqlite")]
-        return Self::Sqlite(SqliteSettings {
+        Self::Sqlite(SqliteSettings {
             filename: PathBuf::from_str("~/.local/state/lunch.db").unwrap(),
-        });
+        })
     }
+}
+trait ToDatabaseUrl {
+    fn to_url(&self) -> String;
 }
 
 impl ToDatabaseUrl for DatabaseSettings {
     fn to_url(&self) -> String {
         match self {
-            #[cfg(feature = "postgres")]
-            DatabaseSettings::Postgres(settings) => settings.to_url(),
-            #[cfg(feature = "sqlite")]
             DatabaseSettings::Sqlite(settings) => settings.to_url(),
         }
     }
 }
 
-#[cfg(feature = "postgres")]
-#[derive(Serialize, Deserialize, Clone)]
-pub struct PostgresSettings {
-    pub host: String,
-    pub port: u16,
-    pub username: String,
-    pub password: String,
-    pub database_name: String,
-}
-
-pub trait ToDatabaseUrl {
-    fn to_url(&self) -> String;
-}
-
-#[cfg(feature = "postgres")]
-impl ToDatabaseUrl for PostgresSettings {
-    fn to_url(&self) -> String {
-        format!(
-            "postgres://{}:{}@{}:{}/{}",
-            self.username, self.password, self.host, self.port, self.database_name
-        )
-    }
-}
-
-#[cfg(feature = "sqlite")]
 #[derive(Serialize, Deserialize, Clone)]
 pub struct SqliteSettings {
     pub filename: PathBuf,
 }
 
-#[cfg(feature = "sqlite")]
 impl ToDatabaseUrl for SqliteSettings {
     fn to_url(&self) -> String {
         format!(

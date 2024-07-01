@@ -34,16 +34,9 @@ use opentelemetry_sdk::runtime;
 use opentelemetry_sdk::trace::config;
 use opentelemetry_sdk::Resource;
 
-#[cfg(feature = "postgres")]
-use sqlx::postgres::PgPoolOptions;
-
-#[cfg(feature = "sqlite")]
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::Pool;
 
-#[cfg(feature = "postgres")]
-use sqlx::Postgres;
-#[cfg(feature = "sqlite")]
 use sqlx::Sqlite;
 use tracing::event;
 use tracing::Instrument;
@@ -74,20 +67,10 @@ pub(crate) fn init_tracer() -> Result<opentelemetry_sdk::trace::Tracer, TraceErr
 }
 
 struct AppState {
-    #[cfg(feature = "postgres")]
-    db: Pool<Postgres>,
-
-    #[cfg(feature = "sqlite")]
     db: Pool<Sqlite>,
 }
 
 impl AppState {
-    #[cfg(feature = "postgres")]
-    fn new(db: Pool<Postgres>) -> Self {
-        Self { db }
-    }
-
-    #[cfg(feature = "sqlite")]
     fn new(db: Pool<Sqlite>) -> Self {
         Self { db }
     }
@@ -170,16 +153,6 @@ async fn main() -> Result<()> {
 
     let database_url = std::env::var("DATABASE_URL").unwrap_or(settings.database_url);
 
-    #[cfg(feature = "postgres")]
-    let db = PgPoolOptions::new()
-        .max_connections(5)
-        .connect(&database_url)
-        .instrument(tracing::info_span!("database connection"))
-        .await
-        .expect("can't connect to database");
-
-    dbg!(&database_url);
-    #[cfg(feature = "sqlite")]
     let db = SqlitePoolOptions::new()
         .max_connections(5)
         .connect(&database_url)
