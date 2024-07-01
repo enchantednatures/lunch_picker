@@ -6,14 +6,14 @@ use std::path::PathBuf;
 
 use dialoguer::{Input, MultiSelect, Select};
 
-use crate::features::{
+use crate::Settings;
+use features::{
     add_homies_favorite_restaurant, create_homie, create_restaurant, get_all_homies,
     get_all_restaurants, get_homies_favorite_restaurants, remove_homies_favorite_restaurant,
     AddFavoriteRestaurantToHomie, CreateHomie, CreateRestaurant, GetAllHomies, GetAllRestaurants,
     GetHomiesFavoriteRestaurants, Homie, RemoveFavoriteRestaurantFromHomie, Restaurant,
 };
-use crate::user::UserId;
-use crate::Settings;
+use models::UserId;
 
 #[tracing::instrument(name = "User Setup")]
 pub fn user_setup() -> Result<Settings> {

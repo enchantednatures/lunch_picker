@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use models::UserId;
 use sqlx::Pool;
 
 #[cfg(feature = "postgres")]
@@ -11,7 +12,6 @@ use tracing::Instrument;
 
 use super::models::Restaurant;
 use super::RestaurantRow;
-use crate::user::UserId;
 
 #[tracing::instrument(skip(db))]
 pub async fn create_restaurant(

@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use models::UserId;
 use sqlx::Pool;
 
 #[cfg(feature = "postgres")]
@@ -14,7 +15,6 @@ use super::models::Homie;
 use super::HomieNameValidationError;
 use super::HomieRow;
 use super::HomiesName;
-use crate::user::UserId;
 
 #[tracing::instrument(skip(db))]
 pub async fn create_homie(
@@ -63,7 +63,7 @@ pub enum CreateHomieError {
     Unknown,
 }
 
-pub(crate) trait CreateHomie {
+pub trait CreateHomie {
     async fn create_homie<'a>(
         &self,
         params: CreateHomieParams<'a>,

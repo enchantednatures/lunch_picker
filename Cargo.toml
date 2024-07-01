@@ -5,6 +5,6 @@ members = [
     "features",
     "lunch_picker",
     "lunch_picker_postgres",
-    "lunch_picker_sqlite",
+    "lunch_picker_sqlite", "models",
 ]
 

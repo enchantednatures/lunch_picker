@@ -5,8 +5,8 @@ use sqlx::Pool;
 use sqlx::Postgres;
 use thiserror::Error;
 
-use crate::features::Homie;
-use crate::user::UserId;
+use crate::Homie;
+use models::UserId;
 
 use super::HomieNameValidationError;
 use super::HomieRow;

@@ -1,4 +1,5 @@
 use anyhow::Result;
+use models::UserId;
 use sqlx::Pool;
 #[cfg(feature = "postgres")]
 use sqlx::Postgres;
@@ -9,8 +10,8 @@ use std::fmt::Debug;
 use tracing::event;
 use tracing::Instrument;
 
-use crate::features::HomieId;
-use crate::user::UserId;
+
+use crate::HomieId;
 
 use super::Restaurant;
 use super::RestaurantRow;

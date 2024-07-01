@@ -9,8 +9,8 @@ use sqlx::Sqlite;
 use thiserror::Error;
 use tracing::Instrument;
 
-use crate::features::{HomieId, Restaurant, RestaurantRow};
-use crate::user::UserId;
+use crate::{HomieId, Restaurant, RestaurantRow};
+use models::UserId;
 
 #[tracing::instrument(name = "Getting all Restaurants", skip(db))]
 pub async fn get_homies_favorite_restaurants(

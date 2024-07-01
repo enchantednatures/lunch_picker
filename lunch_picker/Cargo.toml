@@ -38,6 +38,7 @@ futures = "*"
 dirs = "5.0.1"
 
 features = { path = "../features", default = true }
+models = { path = "../models", default = true }
 
 [dependencies.sqlx]
 version = "0.7"

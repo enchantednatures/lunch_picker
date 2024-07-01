@@ -11,13 +11,13 @@ use tracing::event;
 use tracing::Instrument;
 use tracing::Level;
 
-use crate::features::HomieId;
-use crate::features::HomieNameValidationError;
-use crate::features::HomiesName;
-use crate::features::RestaurantId;
-use crate::features::RestaurantName;
-use crate::features::RestaurantNameValidationError;
-use crate::user::UserId;
+use crate::HomieId;
+use crate::HomieNameValidationError;
+use crate::HomiesName;
+use crate::RestaurantId;
+use crate::RestaurantName;
+use crate::RestaurantNameValidationError;
+use models::UserId;
 
 #[tracing::instrument(skip(db))]
 pub async fn add_recent_restaurant_for_homie(

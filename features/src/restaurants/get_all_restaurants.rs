@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use models::UserId;
 use sqlx::Pool;
 
 #[cfg(feature = "postgres")]
@@ -9,7 +10,6 @@ use sqlx::Sqlite;
 use thiserror::Error;
 use tracing::Instrument;
 
-use crate::user::UserId;
 
 use super::Restaurant;
 use super::RestaurantRow;

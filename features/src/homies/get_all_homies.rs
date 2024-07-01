@@ -9,7 +9,7 @@ use sqlx::Sqlite;
 use thiserror::Error;
 use tracing::Instrument;
 
-use crate::user::UserId;
+use models::UserId;
 
 use super::Homie;
 use super::HomieRow;

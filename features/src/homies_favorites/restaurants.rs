@@ -9,11 +9,11 @@ use sqlx::Sqlite;
 use thiserror::Error;
 use tracing::Instrument;
 
-use crate::features::HomieNameValidationError;
-use crate::features::HomiesName;
-use crate::features::RestaurantName;
-use crate::features::RestaurantNameValidationError;
-use crate::user::UserId;
+use crate::HomieNameValidationError;
+use crate::HomiesName;
+use crate::RestaurantName;
+use crate::RestaurantNameValidationError;
+use models::UserId;
 
 #[tracing::instrument(skip(db))]
 pub async fn add_homies_favorite_restaurant(
