@@ -5,16 +5,27 @@ use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use thiserror::Error;
 
+use crate::user_setup;
+
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Settings {
-    pub database: DatabaseSettings,
+    pub database_url: String,
     pub telemetry_enabled: bool,
+}
+
+impl Settings {
+    pub fn new(database_url: String, telemetry_enabled: bool) -> Self {
+        Self {
+            database_url,
+            telemetry_enabled,
+        }
+    }
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            database: DatabaseSettings::default(),
+            database_url: DatabaseSettings::default().to_url(),
             telemetry_enabled: true,
         }
     }
@@ -116,45 +127,4 @@ pub enum ConfigError {
 
     #[error("Unknown Error")]
     Unknown,
-}
-
-pub struct SettingsBuilder {
-    config_file: Option<PathBuf>,
-}
-impl SettingsBuilder {
-    fn new() -> Self {
-        Self { config_file: None }
-    }
-    pub fn with_config_file(mut self, config_file: impl AsRef<Path>) -> Self {
-        let prefix = &config_file.as_ref().parent().unwrap();
-        fs::create_dir_all(prefix).unwrap();
-        self.config_file = Some(config_file.as_ref().to_path_buf());
-        self
-    }
-
-    pub fn build(self) -> Result<Settings, ConfigError> {
-        let config_file = self
-            .config_file
-            .unwrap_or_else(|| "~/.config/local/lunch.json".into());
-        match config_file.exists() {
-            true => {
-                let config_file = config_file.to_str().ok_or(ConfigError::UnableToParsePath)?;
-                let settings = std::fs::read_to_string(config_file)?;
-                Ok(serde_json::from_str(&settings)?)
-            }
-            false => {
-                fs::write(
-                    config_file,
-                    serde_json::to_string_pretty(&Settings::default()).unwrap(),
-                );
-                Ok(Settings::default())
-            }
-        }
-    }
-}
-
-impl Settings {
-    pub fn builder() -> SettingsBuilder {
-        SettingsBuilder::new()
-    }
 }

@@ -35,12 +35,10 @@ tracing-opentelemetry-instrumentation-sdk =  { version = "0.18" }
 opentelemetry_sdk = {version="0.23" , features = ["rt-tokio"] }
 opentelemetry-otlp = { version = "0.16" , features = ["tonic", "default"] }
 futures = "*"
+dirs = "5.0.1"
 
 
 [dependencies.sqlx]
 version = "0.7"
 features = ["runtime-tokio-rustls", "macros", "chrono", "uuid"]
 
-[dev-dependencies]
-assert_cmd = "2.0.14"
-predicates = "3.1.0"

@@ -17,6 +17,7 @@ use lunch_picker::features::add_recent_restaurant_for_homie;
 use lunch_picker::features::add_recent_restaurant_for_homies;
 use lunch_picker::features::create_homie;
 use lunch_picker::*;
+use std::fs;
 // use lunch_picker::features::create_recipe;
 use lunch_picker::features::create_restaurant;
 use lunch_picker::features::get_all_homies;
@@ -133,9 +134,26 @@ impl Drop for AppState {
 async fn main() -> Result<()> {
     let args = CliArgs::parse();
 
-    let settings = Settings::builder()
-        .with_config_file(args.config_path)
-        .build()?;
+    // check if a file has been given
+    // if no file has been given use the default
+    // if the default file doesn't exist then prompt the user for setting up
+    let mut config_file = dirs::home_dir().expect("No home");
+    config_file.push(".config/local/lunch.json");
+
+    let prefix = &config_file.parent().unwrap();
+    fs::create_dir_all(prefix).unwrap();
+    let settings = match config_file.exists() {
+        true => {
+            let config_file = config_file.to_str().ok_or(ConfigError::UnableToParsePath)?;
+            let settings = std::fs::read_to_string(config_file)?;
+            serde_json::from_str(&settings)?
+        }
+        false => {
+            let settings = user_setup()?;
+            fs::write(config_file, serde_json::to_string_pretty(&settings)?);
+            settings
+        }
+    };
 
     if settings.telemetry_enabled {
         let tracer = init_tracer()?;
@@ -150,7 +168,7 @@ async fn main() -> Result<()> {
         tracing::subscriber::set_global_default(subscriber).unwrap();
     }
 
-    let database_url = std::env::var("DATABASE_URL").unwrap_or(settings.database.to_url());
+    let database_url = std::env::var("DATABASE_URL").unwrap_or(settings.database_url);
 
     #[cfg(feature = "postgres")]
     let db = PgPoolOptions::new()

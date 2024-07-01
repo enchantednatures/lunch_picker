@@ -2,6 +2,7 @@ use anyhow::Result;
 use dialoguer::theme::ColorfulTheme;
 use std::collections::HashSet;
 use std::fmt::Debug;
+use std::path::PathBuf;
 
 use dialoguer::{Input, MultiSelect, Select};
 
@@ -12,14 +13,19 @@ use crate::features::{
     GetHomiesFavoriteRestaurants, Homie, RemoveFavoriteRestaurantFromHomie, Restaurant,
 };
 use crate::user::UserId;
+use crate::Settings;
 
 #[tracing::instrument(name = "User Setup")]
-pub async fn user_setup() -> Result<()> {
+pub fn user_setup() -> Result<Settings> {
     let database_url = Input::<String>::new()
         .with_prompt("Enter the database URL")
         .default("sqlite:test.db".into())
         .interact_text()?;
-    Ok(())
+    let enable_telemetry = Input::<bool>::new()
+        .with_prompt("Enable telemetry")
+        .default(true)
+        .interact()?;
+    Ok(Settings::new(database_url, enable_telemetry))
 }
 #[tracing::instrument(name = "User Adds Restaurants Interactively", skip(db))]
 pub async fn add_restaurants_interactive<T>(

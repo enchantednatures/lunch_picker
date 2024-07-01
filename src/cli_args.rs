@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
@@ -14,12 +16,12 @@ pub struct CliArgs {
             long,
             short,
             require_equals = false,
-            value_name = "config_path",
-            default_value_t = String::from("~/.config/local/lunch.json"),
+            value_name = "config_file",
+            help = "defaults to ~/.config/local/lunch.json",
             // default_missing_value = "always",
             value_parser
         )]
-    pub config_path: String,
+    pub config_file: Option<String>,
 
     /// Specify emitting additional debug information
     #[clap(short, long, value_parser)]
