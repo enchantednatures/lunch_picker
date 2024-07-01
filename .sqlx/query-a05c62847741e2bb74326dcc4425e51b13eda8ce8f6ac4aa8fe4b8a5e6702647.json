@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\nwith home_homies AS (SELECT value as homie_id FROM json_each(?))\ninsert\ninto recent_restaurants (homie_id, user_id, restaurant_id)\nselect h.id,\n       ?,\n       r.id\nfrom home_homies hh\n         join homies h on h.id = hh.homie_id\n         join restaurants r on r.id = ?;\n\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "a05c62847741e2bb74326dcc4425e51b13eda8ce8f6ac4aa8fe4b8a5e6702647"
+}

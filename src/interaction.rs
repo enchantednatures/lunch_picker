@@ -2,7 +2,6 @@ use anyhow::Result;
 use dialoguer::theme::ColorfulTheme;
 use std::collections::HashSet;
 use std::fmt::Debug;
-use std::path::PathBuf;
 
 use dialoguer::{Input, MultiSelect, Select};
 

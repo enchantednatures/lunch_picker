@@ -26,7 +26,6 @@ use lunch_picker::features::remove_homies_favorite_restaurant;
 use lunch_picker::features::Homie;
 use lunch_picker::get_home_homies;
 use lunch_picker::select_restaurant;
-use lunch_picker::Settings;
 use opentelemetry::trace::TraceError;
 use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;

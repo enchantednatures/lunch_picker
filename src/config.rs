@@ -1,11 +1,9 @@
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
 use std::str::FromStr;
 use thiserror::Error;
 
-use crate::user_setup;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Settings {
