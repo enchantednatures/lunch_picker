@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use sqlx::Pool;
 #[cfg(feature = "postgres")]
 use sqlx::Postgres;
 use thiserror::Error;
@@ -8,6 +9,7 @@ use crate::features::Homie;
 use crate::user::UserId;
 
 use super::HomieNameValidationError;
+use super::HomieRow;
 use super::HomiesName;
 
 #[tracing::instrument(name = "Getting Homie by Name", skip(db))]
