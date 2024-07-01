@@ -128,13 +128,14 @@ where exists (select distinct 1
               where f.user_id = $1 
                 and t.user_id = f.user_id
                 and t.homie_id = f.homie_id
-                and t.restaurant_id = f.restaurant_id);
+                and t.restaurant_id = f.restaurant_id)
+returning *;
 "#,
             params.user_id.as_i32(),
             params.name.as_str(),
             params.restaurant_name.as_str()
         )
-        .execute(self)
+        .fetch_one(self)
         .instrument(tracing::info_span!(
             "Removing favorite restaurant to homie db query"
         ))
@@ -152,31 +153,25 @@ impl RemoveFavoriteRestaurantFromHomie for Pool<Sqlite> {
     ) -> Result<(), sqlx::Error> {
         let user_id = params.user_id.as_i32();
         let restaurant_name = params.restaurant_name.as_str();
-        todo!();
         let homie_name = params.name.as_str();
         _ = sqlx::query!(
             r#"
-select *
+delete
 from homies_favorite_restaurants
-where exists (select homies.id,
-                     1,
-                     restaurants.id
-              from homies
-                       join restaurants on restaurants.name = ? and restaurants.user_id = 1
-              where homies.name = ?
-                and homies.user_id = 1
-                and homies_favorite_restaurants.homie_id = homies.id
-                and homies_favorite_restaurants.restaurant_id = restaurants.id
-                and homies_favorite_restaurants.user_id = ?);
-                ;
+where exists (select distinct 1
+    from homies_favorite_restaurants f
+    inner join homies h on h.name = ? and h.id = f.homie_id
+    inner join restaurants r on r.name = ? and r.id = f.restaurant_id
+    where f.user_id = ?
+  and homies_favorite_restaurants.user_id = f.user_id
+  and homies_favorite_restaurants.homie_id = f.homie_id
+  and homies_favorite_restaurants.restaurant_id = f.restaurant_id);
             "#,
-            user_id,
-            restaurant_name,
-            user_id,
             homie_name,
+            restaurant_name,
             user_id
         )
-        .fetch_one(self)
+        .execute(self)
         .instrument(tracing::info_span!(
             "Removeing favorite restaurant to homie db query"
         ))

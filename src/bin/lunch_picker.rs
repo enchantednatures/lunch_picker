@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+
 use anyhow::Result;
 use clap::Parser;
 use lunch_picker::add_homies_favorite_restaurants_interactive;
@@ -16,6 +17,7 @@ use lunch_picker::features::add_homies_favorite_restaurant;
 use lunch_picker::features::add_recent_restaurant_for_homie;
 use lunch_picker::features::add_recent_restaurant_for_homies;
 use lunch_picker::features::create_homie;
+use lunch_picker::*;
 // use lunch_picker::features::create_recipe;
 use lunch_picker::features::create_restaurant;
 use lunch_picker::features::get_all_homies;
@@ -24,6 +26,7 @@ use lunch_picker::features::remove_homies_favorite_restaurant;
 use lunch_picker::features::Homie;
 use lunch_picker::get_home_homies;
 use lunch_picker::select_restaurant;
+use lunch_picker::Settings;
 use opentelemetry::trace::TraceError;
 use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
@@ -122,7 +125,7 @@ impl AppState {
 
 impl Drop for AppState {
     fn drop(&mut self) {
-        self.db.close();
+        futures::executor::block_on(self.db.close());
         opentelemetry::global::shutdown_tracer_provider();
     }
 }
@@ -131,19 +134,24 @@ impl Drop for AppState {
 async fn main() -> Result<()> {
     let args = CliArgs::parse();
 
-    let tracer = init_tracer()?;
+    let settings = Settings::builder()
+        .with_config_file(args.config_path)
+        .build()?;
 
-    // Create a tracing layer with the configured tracer
-    let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
-    // Use the tracing subscriber `Registry`, or any other subscriber
-    // that impls `LookupSpan`
-    let subscriber = Registry::default().with(telemetry);
+    if settings.telemetry_enabled {
+        let tracer = init_tracer()?;
 
-    // Trace executed code
-    tracing::subscriber::set_global_default(subscriber).unwrap();
+        // Create a tracing layer with the configured tracer
+        let telemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+        // Use the tracing subscriber `Registry`, or any other subscriber
+        // that impls `LookupSpan`
+        let subscriber = Registry::default().with(telemetry);
 
-    dbg!(&args);
-    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+        // Trace executed code
+        tracing::subscriber::set_global_default(subscriber).unwrap();
+    }
+
+    let database_url = std::env::var("DATABASE_URL").unwrap_or(settings.database.to_url());
 
     #[cfg(feature = "postgres")]
     let db = PgPoolOptions::new()
@@ -153,6 +161,7 @@ async fn main() -> Result<()> {
         .await
         .expect("can't connect to database");
 
+    dbg!(&database_url);
     #[cfg(feature = "sqlite")]
     let db = SqlitePoolOptions::new()
         .max_connections(5)

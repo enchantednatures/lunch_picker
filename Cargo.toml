@@ -7,10 +7,11 @@ edition = "2021"
 opt-level = 3
 
 [features]
-default = ["postgres"] # soon to be sqlite
+default = ["sqlite"] # soon to be sqlite
 postgres_tests = ["postgres" , "sqlx/migrate"]
 postgres = ["sqlx/postgres"]
 sqlite = ["sqlx/sqlite"]
+sqlite_tests = ["sqlite"]
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
@@ -33,6 +34,7 @@ init-tracing-opentelemetry = { version = "0.18", features = [ "otlp", "tracing_s
 tracing-opentelemetry-instrumentation-sdk =  { version = "0.18" }
 opentelemetry_sdk = {version="0.23" , features = ["rt-tokio"] }
 opentelemetry-otlp = { version = "0.16" , features = ["tonic", "default"] }
+futures = "*"
 
 
 [dependencies.sqlx]

@@ -15,7 +15,7 @@ pub struct CliArgs {
             short,
             require_equals = false,
             value_name = "config_path",
-            default_value_t = String::from("~/.config/lunch-picker/config.toml"),
+            default_value_t = String::from("~/.config/local/lunch.json"),
             // default_missing_value = "always",
             value_parser
         )]

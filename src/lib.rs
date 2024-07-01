@@ -7,6 +7,7 @@ pub mod features;
 mod interaction;
 pub mod user;
 
+pub use config::*;
 pub use interaction::*;
 
 #[cfg(feature = "postgres")]
