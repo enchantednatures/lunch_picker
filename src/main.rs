@@ -15,6 +15,7 @@ use lunch_picker::features::add_recent_restaurant_for_homie;
 use lunch_picker::features::add_recent_restaurant_for_homies;
 use lunch_picker::features::create_homie;
 use lunch_picker::*;
+use sqlx::migrate::MigrateDatabase;
 use std::fs;
 // use lunch_picker::features::create_recipe;
 use lunch_picker::features::create_restaurant;
@@ -158,6 +159,9 @@ async fn main() -> Result<()> {
     }
 
     let database_url = std::env::var("DATABASE_URL").unwrap_or(settings.database_url);
+    if !sqlx::Sqlite::database_exists(&database_url).await? {
+            sqlx::Sqlite::create_database(&database_url).await?;
+        }
 
     let db = SqlitePoolOptions::new()
         .max_connections(5)

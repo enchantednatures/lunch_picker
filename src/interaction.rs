@@ -17,7 +17,7 @@ use crate::Settings;
 #[tracing::instrument(name = "User Setup")]
 pub fn user_setup() -> Result<Settings> {
     let mut default_path = dirs::home_dir().expect("config dir not set");
-    default_path.push(".config/state/lunch.db");
+    default_path.push(".local/state/lunch.db");
     let path = default_path
         .to_str()
         .expect("unable to set default database path");
