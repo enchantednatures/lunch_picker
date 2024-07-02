@@ -1,12 +1,12 @@
-#![cfg(feature = "postgres_tests")]
+#![cfg(feature = "sqlite_tests")]
 
 use anyhow::Result;
 use lunch_picker::features::create_homie;
-use sqlx::PgPool;
+use sqlx::SqlitePool;
 
-#[cfg_attr(not(feature = "postgres_tests"), ignore)]
-#[sqlx::test(migrator = "lunch_picker::MIGRATOR", fixtures("homies"))]
-async fn test_add_existing_homie_fails(pool: PgPool) -> Result<()> {
+#[cfg_attr(not(feature = "sqlite_tests"), ignore)]
+#[sqlx::test(fixtures("homies"))]
+async fn test_add_existing_homie_fails(pool: SqlitePool) -> Result<()> {
     let actual = create_homie("Alice".to_string(), -1, &pool).await;
 
     assert_eq!(
@@ -16,9 +16,9 @@ async fn test_add_existing_homie_fails(pool: PgPool) -> Result<()> {
     Ok(())
 }
 
-#[cfg_attr(not(feature = "postgres_tests"), ignore)]
-#[sqlx::test(migrator = "lunch_picker::MIGRATOR", fixtures("homies"))]
-async fn test_add_homie(pool: PgPool) -> Result<()> {
+#[cfg_attr(not(feature = "sqlite_tests"), ignore)]
+#[sqlx::test(fixtures("homies"))]
+async fn test_add_homie(pool: SqlitePool) -> Result<()> {
     let result = create_homie("Markus".to_string(), -1, &pool).await?;
 
     assert_eq!("Markus", result.name.as_str());

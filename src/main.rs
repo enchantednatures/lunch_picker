@@ -26,7 +26,6 @@ use lunch_picker::features::remove_homies_favorite_restaurant;
 use lunch_picker::features::Homie;
 use lunch_picker::get_home_homies;
 use lunch_picker::select_restaurant;
-use lunch_picker::Settings;
 use opentelemetry::trace::TraceError;
 use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
@@ -34,16 +33,9 @@ use opentelemetry_sdk::runtime;
 use opentelemetry_sdk::trace::config;
 use opentelemetry_sdk::Resource;
 
-#[cfg(feature = "postgres")]
-use sqlx::postgres::PgPoolOptions;
-
-#[cfg(feature = "sqlite")]
 use sqlx::sqlite::SqlitePoolOptions;
 use sqlx::Pool;
 
-#[cfg(feature = "postgres")]
-use sqlx::Postgres;
-#[cfg(feature = "sqlite")]
 use sqlx::Sqlite;
 use tracing::event;
 use tracing::Instrument;
@@ -74,20 +66,10 @@ pub(crate) fn init_tracer() -> Result<opentelemetry_sdk::trace::Tracer, TraceErr
 }
 
 struct AppState {
-    #[cfg(feature = "postgres")]
-    db: Pool<Postgres>,
-
-    #[cfg(feature = "sqlite")]
     db: Pool<Sqlite>,
 }
 
 impl AppState {
-    #[cfg(feature = "postgres")]
-    fn new(db: Pool<Postgres>) -> Self {
-        Self { db }
-    }
-
-    #[cfg(feature = "sqlite")]
     fn new(db: Pool<Sqlite>) -> Self {
         Self { db }
     }
@@ -105,6 +87,15 @@ impl AppState {
         let mut restaurants = get_candidate_restaurants(home_homies.clone(), 1, &self.db).await?;
         if restaurants.is_empty() {
             event!(Level::ERROR, "No candidate restaurants found");
+            add_restaurants_interactive(CLI_USER_ID, &self.db).await?;
+            restaurants = get_candidate_restaurants(home_homies.clone(), 1, &self.db).await?;
+        }
+
+        if restaurants.is_empty() {
+            event!(
+                Level::ERROR,
+                "User did not add any restaurants that produced candidates"
+            );
             add_restaurants_interactive(CLI_USER_ID, &self.db).await?;
             restaurants = get_candidate_restaurants(home_homies.clone(), 1, &self.db).await?;
         }
@@ -150,7 +141,7 @@ async fn main() -> Result<()> {
         }
         false => {
             let settings = user_setup()?;
-            fs::write(config_file, serde_json::to_string_pretty(&settings)?);
+            fs::write(config_file, serde_json::to_string_pretty(&settings)?)?;
             settings
         }
     };
@@ -170,16 +161,6 @@ async fn main() -> Result<()> {
 
     let database_url = std::env::var("DATABASE_URL").unwrap_or(settings.database_url);
 
-    #[cfg(feature = "postgres")]
-    let db = PgPoolOptions::new()
-        .max_connections(5)
-        .connect(&database_url)
-        .instrument(tracing::info_span!("database connection"))
-        .await
-        .expect("can't connect to database");
-
-    dbg!(&database_url);
-    #[cfg(feature = "sqlite")]
     let db = SqlitePoolOptions::new()
         .max_connections(5)
         .connect(&database_url)

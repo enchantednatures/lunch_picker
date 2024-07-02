@@ -2,7 +2,6 @@ use anyhow::Result;
 use dialoguer::theme::ColorfulTheme;
 use std::collections::HashSet;
 use std::fmt::Debug;
-use std::path::PathBuf;
 
 use dialoguer::{Input, MultiSelect, Select};
 
@@ -17,16 +16,28 @@ use crate::Settings;
 
 #[tracing::instrument(name = "User Setup")]
 pub fn user_setup() -> Result<Settings> {
+    let mut default_path = dirs::home_dir().expect("config dir not set");
+    default_path.push(".config/state/lunch.db");
+    let path = default_path
+        .to_str()
+        .expect("unable to set default database path");
     let database_url = Input::<String>::new()
         .with_prompt("Enter the database URL")
-        .default("sqlite:test.db".into())
+        .default(format!("sqlite:{}", path))
         .interact_text()?;
-    let enable_telemetry = Input::<bool>::new()
-        .with_prompt("Enable telemetry")
-        .default(true)
-        .interact()?;
+    let enable_telemetry = match Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("Enable telemetry?")
+        .items(&["Yes", "No"])
+        .default(1)
+        .interact()?
+    {
+        0 => true,
+        1 => false,
+        _ => unreachable!(),
+    };
     Ok(Settings::new(database_url, enable_telemetry))
 }
+
 #[tracing::instrument(name = "User Adds Restaurants Interactively", skip(db))]
 pub async fn add_restaurants_interactive<T>(
     user_id: impl Into<UserId> + Debug,
@@ -48,21 +59,36 @@ where
     let user_id = user_id.into();
     while !input.is_empty() {
         println!("Adding restaurant: {}", input);
-        create_restaurant(input, user_id, db).await?;
+        match create_restaurant(input, user_id, db).await {
+            Ok(_) => Ok(()),
+            Err(e) => match e {
+                crate::features::CreateRestaurantError::InvalidName { name } => {
+                    println!("Invalid name: {}", name);
+                    Ok(())
+                }
+                crate::features::CreateRestaurantError::RestaurantAlreadyExists { name } => {
+                    println!("Restaurant already exists: {}", name);
+                    Ok(())
+                }
+                _ => Err(e),
+            },
+        }?;
         input = Input::<String>::new()
             .with_prompt("Add another restaurant? (leave blank to finish)")
             .default("".into())
             .interact()?;
-
-        println!("Added restaurant: {}", input);
     }
-    let mut input = "y".to_string();
-    while input.trim() == "y" {
+    let mut input = 0;
+    while input != 1 {
         add_homies_favorite_restaurants_interactive(user_id, db).await?;
-        input = Input::<String>::new()
-            .with_prompt("Continue?")
-            .default("y".into())
-            .interact_text()?;
+        input = Select::with_theme(&ColorfulTheme::default())
+            .with_prompt("Continue adding favorites to homies?")
+            .items(&["Yes", "No"])
+            .interact()?;
+        // input = Input::<String>::new()
+        //     .with_prompt("Continue adding favorites to homies?")
+        //     .default("n".into())
+        //     .interact_text()?;
     }
     Ok(())
 }
@@ -166,12 +192,10 @@ pub async fn get_favorite_restaurants(homies: &[Homie]) -> Result<Vec<&Homie>> {
     let chosen = MultiSelect::with_theme(&ColorfulTheme::default())
         .with_prompt("Who's home?")
         .items(&homies_names)
+        .report(true)
         .interact()?;
     if chosen.is_empty() {
-        println!("No homies selected");
         return Ok(homies.iter().collect());
-    } else {
-        println!("Homies selected: {:?}", chosen);
     }
     let home_homies = chosen.iter().map(|&index| &homies[index]).collect();
     Ok(home_homies)
@@ -242,8 +266,6 @@ pub async fn get_home_homies(homies: &[Homie]) -> Result<Vec<&Homie>> {
     if chosen.is_empty() {
         println!("No homies selected");
         return Ok(homies.iter().collect());
-    } else {
-        println!("Homies selected: {:?}", chosen);
     }
     let home_homies = chosen.iter().map(|&index| &homies[index]).collect();
     Ok(home_homies)

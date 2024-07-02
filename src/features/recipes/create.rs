@@ -6,7 +6,6 @@ use std::fmt::Formatter;
 use std::fmt::{self};
 
 use sqlx::Pool;
-use sqlx::Postgres;
 
 use crate::user::UserId;
 
@@ -67,36 +66,4 @@ impl Display for CreateRecipeError {
 
 trait CreateRecipe {
     async fn create_recipe(&self, params: CreateRecipeParams) -> Result<Recipe, CreateRecipeError>;
-}
-
-#[cfg(feature = "postgres")]
-impl CreateRecipe for Pool<Postgres> {
-    #[tracing::instrument(skip(self))]
-    async fn create_recipe(&self, params: CreateRecipeParams) -> Result<Recipe, CreateRecipeError> {
-        let recipe = sqlx::query_as!(
-            Recipe,
-            r#"INSERT INTO recipes (user_id, name) VALUES ($1, $2) RETURNING id, name"#,
-            params.user_id,
-            params.name
-        )
-        .fetch_one(self)
-        .await
-        .map_err(|e| match e {
-            sqlx::Error::Database(db_error) => {
-                if db_error.is_unique_violation() {
-                    return CreateRecipeError::RecipeAlreadyExists;
-                } else if db_error.is_foreign_key_violation() {
-                    return CreateRecipeError::ForeignKeyViolation {
-                        constraint: db_error
-                            .constraint()
-                            .expect("Constraint should be named if it is a ForeignKeyViolation")
-                            .to_string(),
-                    };
-                }
-                CreateRecipeError::Unknown
-            }
-            _ => CreateRecipeError::Unknown,
-        })?;
-        Ok(recipe)
-    }
 }
