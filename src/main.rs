@@ -160,8 +160,8 @@ async fn main() -> Result<()> {
 
     let database_url = std::env::var("DATABASE_URL").unwrap_or(settings.database_url);
     if !sqlx::Sqlite::database_exists(&database_url).await? {
-            sqlx::Sqlite::create_database(&database_url).await?;
-        }
+        sqlx::Sqlite::create_database(&database_url).await?;
+    }
 
     let db = SqlitePoolOptions::new()
         .max_connections(5)
