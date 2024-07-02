@@ -1,7 +1,6 @@
 drop table recipes cascade;
 drop table recent_recipes cascade;
 drop table homies_favorite_recipes cascade;
-drop type measure cascade;
 drop table ingredients cascade;
 
 drop table recipe_ingredients cascade;
