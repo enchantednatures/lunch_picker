@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "\ndelete\nfrom homies_favorite_restaurants\nwhere exists (select distinct 1\n    from homies_favorite_restaurants f\n    inner join homies h on h.name = ? and h.id = f.homie_id\n    inner join restaurants r on r.name = ? and r.id = f.restaurant_id\n    where f.user_id = ?\n  and homies_favorite_restaurants.user_id = f.user_id\n  and homies_favorite_restaurants.homie_id = f.homie_id\n  and homies_favorite_restaurants.restaurant_id = f.restaurant_id)\n  returning *;\n            ",
+  "describe": {
+    "columns": [
+      {
+        "name": "homie_id",
+        "ordinal": 0,
+        "type_info": "Int64"
+      },
+      {
+        "name": "restaurant_id",
+        "ordinal": 1,
+        "type_info": "Int64"
+      },
+      {
+        "name": "user_id",
+        "ordinal": 2,
+        "type_info": "Int64"
+      }
+    ],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ca9341c37069395f854e81acd0c075ccf50b1105579bc9b74b39b825fca8b856"
+}
