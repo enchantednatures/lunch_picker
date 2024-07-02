@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use anyhow::Result;
 use clap::Parser;
 use lunch_picker::add_homies_favorite_restaurants_interactive;
