@@ -1,0 +1,12 @@
+DROP TABLE IF EXISTS shopping_cart;
+DROP TABLE IF EXISTS meal_plan_templates;
+DROP TABLE IF EXISTS meal_plan_entries;
+DROP TABLE IF EXISTS recipe_tags;
+DROP TABLE IF EXISTS tags;
+DROP TABLE IF EXISTS pantry_ingredients;
+DROP TABLE IF EXISTS homies_favorite_recipes;
+DROP TABLE IF EXISTS recent_recipes;
+DROP TABLE IF EXISTS recipe_steps;
+DROP TABLE IF EXISTS recipe_ingredients;
+DROP TABLE IF EXISTS ingredients;
+DROP TABLE IF EXISTS recipes;

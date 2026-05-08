@@ -41,7 +41,7 @@ impl Restaurant {
         }
     }
 
-    pub fn as_view(&self) -> RestaurantView {
+    pub fn as_view(&self) -> RestaurantView<'_> {
         RestaurantView {
             id: self.id.0,
             name: &self.name.0,

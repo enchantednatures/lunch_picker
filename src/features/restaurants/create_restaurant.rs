@@ -7,16 +7,19 @@ use thiserror::Error;
 use tracing::Instrument;
 
 use super::models::Restaurant;
+use super::RestaurantName;
+use super::RestaurantNameValidationError;
 use super::RestaurantRow;
 use crate::user::UserId;
 
 #[tracing::instrument(skip(db))]
 pub async fn create_restaurant(
-    restaurant_name: String,
+    restaurant_name: impl TryInto<RestaurantName, Error = RestaurantNameValidationError> + Debug,
     user_id: impl Into<UserId> + Debug,
     db: &impl CreateRestaurant,
 ) -> Result<Restaurant, CreateRestaurantError> {
-    let restaurant = CreateRestaurantParams::new(user_id.into(), &restaurant_name);
+    let restaurant_name: RestaurantName = restaurant_name.try_into()?;
+    let restaurant = CreateRestaurantParams::new(user_id.into(), restaurant_name.as_str());
 
     let created_restaurant = db.create_restaurant(restaurant).await?;
 
@@ -24,7 +27,7 @@ pub async fn create_restaurant(
 }
 
 #[derive(Debug)]
-struct CreateRestaurantParams<'a> {
+pub(crate) struct CreateRestaurantParams<'a> {
     user_id: i32,
     name: &'a str,
 }
@@ -40,8 +43,8 @@ impl<'a> CreateRestaurantParams<'a> {
 
 #[derive(Error, Debug)]
 pub enum CreateRestaurantError {
-    #[error("Invalid Name")]
-    InvalidName { name: String },
+    #[error(transparent)]
+    ValidationError(#[from] RestaurantNameValidationError),
 
     #[error("Invalid User: {:?}", constraint)]
     ForeignKeyViolation { constraint: String },
@@ -56,7 +59,7 @@ pub enum CreateRestaurantError {
     Unknown,
 }
 
-pub trait CreateRestaurant {
+pub(crate) trait CreateRestaurant {
     async fn create_restaurant<'a>(
         &self,
         params: CreateRestaurantParams<'a>,

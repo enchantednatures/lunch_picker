@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into homies_favorite_restaurants (homie_id, user_id, restaurant_id)\n                select\n                    h.id,\n                    ?,\n                    r.id\n                from homies h\n                join restaurants r on r.name = ? and r.user_id = ?\n                where h.name = ? and h.user_id = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "a5ed76cd4169c8def5f43c42fa136581e41971e3d78ca27d59885d01f335aef1"
+}

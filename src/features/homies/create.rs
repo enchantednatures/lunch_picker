@@ -27,7 +27,7 @@ pub async fn create_homie(
 }
 
 #[derive(Debug)]
-struct CreateHomieParams<'a> {
+pub(crate) struct CreateHomieParams<'a> {
     user_id: i32,
     name: &'a str,
 }

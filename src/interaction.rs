@@ -9,7 +9,7 @@ use crate::features::{
     add_homies_favorite_restaurant, create_homie, create_restaurant, get_all_homies,
     get_all_restaurants, get_homies_favorite_restaurants, remove_homies_favorite_restaurant,
     AddFavoriteRestaurantToHomie, CreateHomie, CreateRestaurant, GetAllHomies, GetAllRestaurants,
-    GetHomiesFavoriteRestaurants, Homie, RemoveFavoriteRestaurantFromHomie, Restaurant,
+    GetHomiesFavoriteRestaurants, Homie, Recipe, RemoveFavoriteRestaurantFromHomie, Restaurant,
 };
 use crate::user::UserId;
 use crate::Settings;
@@ -62,8 +62,8 @@ where
         match create_restaurant(input, user_id, db).await {
             Ok(_) => Ok(()),
             Err(e) => match e {
-                crate::features::CreateRestaurantError::InvalidName { name } => {
-                    println!("Invalid name: {}", name);
+                crate::features::CreateRestaurantError::ValidationError(_) => {
+                    println!("Invalid restaurant name: {}", e);
                     Ok(())
                 }
                 crate::features::CreateRestaurantError::RestaurantAlreadyExists { name } => {
@@ -124,9 +124,7 @@ where
     let restaurant_names = restaurants
         .iter()
         // .filter(|r| !favorited_ids.contains(&r.id))
-        .map(|h| {
-            return h.name.as_str();
-        })
+        .map(|h| h.name.as_str())
         .collect::<Vec<&str>>();
 
     let chosen = MultiSelect::with_theme(&ColorfulTheme::default())
@@ -180,13 +178,11 @@ where
 pub async fn get_favorite_restaurants(homies: &[Homie]) -> Result<Vec<&Homie>> {
     if homies.is_empty() {
         tracing::error!("No homies found");
-        panic!();
+        anyhow::bail!("No homies found. Please add homies first.");
     }
     let homies_names = homies
         .iter()
-        .map(|h| {
-            return h.name.as_str();
-        })
+        .map(|h| h.name.as_str())
         .collect::<Vec<&str>>();
 
     let chosen = MultiSelect::with_theme(&ColorfulTheme::default())
@@ -205,9 +201,7 @@ pub async fn get_favorite_restaurants(homies: &[Homie]) -> Result<Vec<&Homie>> {
 pub fn select_homie(homies: &Vec<Homie>) -> Result<&Homie> {
     let homies_names = homies
         .iter()
-        .map(|h| {
-            return h.name.as_str();
-        })
+        .map(|h| h.name.as_str())
         .collect::<Vec<&str>>();
 
     let chosen = Select::with_theme(&ColorfulTheme::default())
@@ -250,13 +244,11 @@ where
 pub async fn get_home_homies(homies: &[Homie]) -> Result<Vec<&Homie>> {
     if homies.is_empty() {
         tracing::error!("No homies found");
-        panic!();
+        anyhow::bail!("No homies found. Please add homies first.");
     }
     let homies_names = homies
         .iter()
-        .map(|h| {
-            return h.name.as_str();
-        })
+        .map(|h| h.name.as_str())
         .collect::<Vec<&str>>();
 
     let chosen = MultiSelect::with_theme(&ColorfulTheme::default())
@@ -275,9 +267,7 @@ pub async fn get_home_homies(homies: &[Homie]) -> Result<Vec<&Homie>> {
 pub async fn select_restaurant(restaurants: &[Restaurant]) -> Result<&Restaurant> {
     let restaurant_names = restaurants
         .iter()
-        .map(|h| {
-            return h.name.as_str();
-        })
+        .map(|h| h.name.as_str())
         .collect::<Vec<&str>>();
     let chosen = Select::new()
         .with_prompt("where would you like to eat?")
@@ -285,4 +275,30 @@ pub async fn select_restaurant(restaurants: &[Restaurant]) -> Result<&Restaurant
         .interact()?;
 
     Ok(&restaurants[chosen])
+}
+
+#[tracing::instrument(name = "User Selects Recipe From List", skip(recipes))]
+pub async fn select_recipe(recipes: &[Recipe]) -> Result<&Recipe> {
+    let recipe_names = recipes
+        .iter()
+        .map(|r| r.name.as_str())
+        .collect::<Vec<&str>>();
+    let chosen = Select::new()
+        .with_prompt("what would you like to cook?")
+        .items(&recipe_names)
+        .interact()?;
+
+    Ok(&recipes[chosen])
+}
+
+#[tracing::instrument(name = "User Selects Pick Source")]
+pub async fn select_pick_source() -> Result<&'static str> {
+    let sources = &["Restaurants", "Recipes"];
+    let chosen = Select::with_theme(&ColorfulTheme::default())
+        .with_prompt("What are we planning for?")
+        .items(sources)
+        .default(0)
+        .interact()?;
+
+    Ok(sources[chosen])
 }

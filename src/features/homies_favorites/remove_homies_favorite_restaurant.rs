@@ -55,7 +55,7 @@ pub async fn remove_homies_favorite_restaurant(
 }
 
 #[derive(Debug)]
-struct RemoveFavoriteRestaurantFromHomieParams {
+pub(crate) struct RemoveFavoriteRestaurantFromHomieParams {
     user_id: UserId,
     name: HomiesName,
     restaurant_name: RestaurantName,
@@ -98,8 +98,8 @@ pub enum RemoveHomiesFavoriteRestaurantError {
     Unknown,
 }
 
-pub trait RemoveFavoriteRestaurantFromHomie {
-    async fn remove_homies_favorite_restaurant<'a>(
+pub(crate) trait RemoveFavoriteRestaurantFromHomie {
+    async fn remove_homies_favorite_restaurant(
         &self,
         params: &RemoveFavoriteRestaurantFromHomieParams,
     ) -> Result<(), sqlx::Error>;
@@ -107,36 +107,35 @@ pub trait RemoveFavoriteRestaurantFromHomie {
 
 impl RemoveFavoriteRestaurantFromHomie for Pool<Sqlite> {
     #[tracing::instrument(skip(self))]
-    async fn remove_homies_favorite_restaurant<'a>(
+    async fn remove_homies_favorite_restaurant(
         &self,
         params: &RemoveFavoriteRestaurantFromHomieParams,
     ) -> Result<(), sqlx::Error> {
         let user_id = params.user_id.as_i32();
         let restaurant_name = params.restaurant_name.as_str();
         let homie_name = params.name.as_str();
-        _ = sqlx::query!(
+        let result = sqlx::query!(
             r#"
-delete
-from homies_favorite_restaurants
-where exists (select distinct 1
-    from homies_favorite_restaurants f
-    inner join homies h on h.name = ? and h.id = f.homie_id
-    inner join restaurants r on r.name = ? and r.id = f.restaurant_id
-    where f.user_id = ?
-  and homies_favorite_restaurants.user_id = f.user_id
-  and homies_favorite_restaurants.homie_id = f.homie_id
-  and homies_favorite_restaurants.restaurant_id = f.restaurant_id)
-  returning *;
+                delete from homies_favorite_restaurants
+                where user_id = ?
+                  and homie_id = (select id from homies where name = ? and user_id = ?)
+                  and restaurant_id = (select id from restaurants where name = ? and user_id = ?)
             "#,
+            user_id,
             homie_name,
+            user_id,
             restaurant_name,
             user_id
         )
-        .fetch_one(self)
+        .execute(self)
         .instrument(tracing::info_span!(
-            "Removeing favorite restaurant to homie db query"
+            "Removing favorite restaurant from homie db query"
         ))
         .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(sqlx::Error::RowNotFound);
+        }
         Ok(())
     }
 }

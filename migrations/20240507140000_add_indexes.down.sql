@@ -1,0 +1,2 @@
+drop index idx_recent_restaurants_user_homie_date;
+drop index idx_homies_fav_restaurants_user_homie;

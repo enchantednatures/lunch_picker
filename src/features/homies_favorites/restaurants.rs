@@ -55,7 +55,7 @@ pub async fn add_homies_favorite_restaurant(
 }
 
 #[derive(Debug)]
-struct AddFavoriteRestaurantToHomieParams {
+pub(crate) struct AddFavoriteRestaurantToHomieParams {
     user_id: UserId,
     name: HomiesName,
     restaurant_name: RestaurantName,
@@ -98,8 +98,8 @@ pub enum AddHomiesFavoriteRestaurantError {
     Unknown,
 }
 
-pub trait AddFavoriteRestaurantToHomie {
-    async fn add_homies_favorite_restaurant<'a>(
+pub(crate) trait AddFavoriteRestaurantToHomie {
+    async fn add_homies_favorite_restaurant(
         &self,
         params: &AddFavoriteRestaurantToHomieParams,
     ) -> Result<(), sqlx::Error>;
@@ -107,26 +107,23 @@ pub trait AddFavoriteRestaurantToHomie {
 
 impl AddFavoriteRestaurantToHomie for Pool<Sqlite> {
     #[tracing::instrument(skip(self))]
-    async fn add_homies_favorite_restaurant<'a>(
+    async fn add_homies_favorite_restaurant(
         &self,
         params: &AddFavoriteRestaurantToHomieParams,
     ) -> Result<(), sqlx::Error> {
         let user_id = params.user_id.as_i32();
         let restaurant_name = params.restaurant_name.as_str();
         let homie_name = params.name.as_str();
-        _ = sqlx::query!(
+        let result = sqlx::query!(
             r#"
                 insert into homies_favorite_restaurants (homie_id, user_id, restaurant_id)
-                select 
-                    h.id, 
+                select
+                    h.id,
                     ?,
                     r.id
                 from homies h
                 join restaurants r on r.name = ? and r.user_id = ?
-                where h.name = ? and h.user_id =? 
-                limit 1
-                returning *;
-                ;
+                where h.name = ? and h.user_id = ?
             "#,
             user_id,
             restaurant_name,
@@ -134,11 +131,15 @@ impl AddFavoriteRestaurantToHomie for Pool<Sqlite> {
             homie_name,
             user_id
         )
-        .fetch_one(self)
+        .execute(self)
         .instrument(tracing::info_span!(
             "Adding favorite restaurant to homie db query"
         ))
         .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(sqlx::Error::RowNotFound);
+        }
         Ok(())
     }
 }

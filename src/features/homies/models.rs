@@ -32,7 +32,7 @@ impl Homie {
         }
     }
 
-    pub fn as_view(&self) -> HomieView {
+    pub fn as_view(&self) -> HomieView<'_> {
         HomieView {
             id: self.id.0,
             name: &self.name.0,

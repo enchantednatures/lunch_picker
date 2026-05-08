@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::path::PathBuf;
-use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -35,9 +34,10 @@ pub enum DatabaseSettings {
 
 impl Default for DatabaseSettings {
     fn default() -> Self {
-        Self::Sqlite(SqliteSettings {
-            filename: PathBuf::from_str("~/.local/state/lunch.db").unwrap(),
-        })
+        let mut path = dirs::data_dir().expect("No data directory");
+        path.push("lunch_picker");
+        path.push("lunch.db");
+        Self::Sqlite(SqliteSettings { filename: path })
     }
 }
 trait ToDatabaseUrl {

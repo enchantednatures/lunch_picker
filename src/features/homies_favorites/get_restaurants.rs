@@ -22,7 +22,7 @@ pub async fn get_homies_favorite_restaurants(
 }
 
 #[derive(Debug)]
-struct GetHomiesFavoriteRestaurantsParams {
+pub(crate) struct GetHomiesFavoriteRestaurantsParams {
     user_id: UserId,
     homie_id: HomieId,
 }
@@ -41,7 +41,7 @@ pub enum GetHomiesFavoriteRestaurantsError {
 
 // todo: do we need the second user_id clause?
 // todo: does this only need to return a restaurant id?
-pub trait GetHomiesFavoriteRestaurants {
+pub(crate) trait GetHomiesFavoriteRestaurants {
     async fn get_homies_favorite_restaurants(
         &self,
         params: &GetHomiesFavoriteRestaurantsParams,

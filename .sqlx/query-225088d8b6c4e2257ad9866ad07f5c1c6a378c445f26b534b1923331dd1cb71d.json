@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                delete from homies_favorite_restaurants\n                where user_id = ?\n                  and homie_id = (select id from homies where name = ? and user_id = ?)\n                  and restaurant_id = (select id from restaurants where name = ? and user_id = ?)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "225088d8b6c4e2257ad9866ad07f5c1c6a378c445f26b534b1923331dd1cb71d"
+}

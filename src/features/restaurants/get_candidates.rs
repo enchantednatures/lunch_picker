@@ -27,7 +27,7 @@ where
     let h: Vec<_> = homie_ids.iter().collect();
     let user_id = user_id.into();
 
-    let created_restaurant = db.get_candidates(h.as_slice(), user_id).await;
+    let created_restaurant = db.get_candidates(h.as_slice(), user_id).await?;
 
     event!(
         tracing::Level::INFO,
@@ -38,11 +38,11 @@ where
 }
 
 trait GetCandidates {
-    async fn get_candidates(&self, home_homies: &[&HomieId], user_id: UserId) -> Vec<Restaurant>;
+    async fn get_candidates(&self, home_homies: &[&HomieId], user_id: UserId) -> Result<Vec<Restaurant>, sqlx::Error>;
 }
 
 impl GetCandidates for Pool<Sqlite> {
-    async fn get_candidates(&self, home_homies: &[&HomieId], user_id: UserId) -> Vec<Restaurant> {
+    async fn get_candidates(&self, home_homies: &[&HomieId], user_id: UserId) -> Result<Vec<Restaurant>, sqlx::Error> {
         let candidates: Vec<RestaurantRow> = sqlx::query_as(
             r#"
 with home_homies AS (SELECT value as homie_id FROM json_each(?)),
@@ -61,7 +61,7 @@ with home_homies AS (SELECT value as homie_id FROM json_each(?)),
                                              on r.user_id = hfr.user_id and r.id = hfr.restaurant_id
                                         join homies h on r.user_id = h.user_id and h.id = hfr.homie_id
                                         join home_homies hh on hh.homie_id = h.id
-                               where r.user_id = 1
+                               where r.user_id = ?
                                  and not exists (select 1
                                                  from homies_recents_restaurants_view v
                                                           join home_homies hh on v.homie_id = hh.homie_id
@@ -85,13 +85,13 @@ from (select *
          join restaurants r on t.restaurant_id = r.id
             "#,
         )
-        .bind(&serde_json::to_string(&home_homies.iter().map(|h| h.as_i32()).collect::<Vec<i32>>()).expect("unable to serialize list of home homie ids as json"))
+        .bind(serde_json::to_string(&home_homies.iter().map(|h| h.as_i32()).collect::<Vec<i32>>()).expect("unable to serialize list of home homie ids as json"))
+            .bind(user_id.as_i32())
             .bind(user_id.as_i32())
         .fetch_all(self)
         .instrument(tracing::info_span!("Getting candidates restaurants for homies", { "count of home homies" } = home_homies.len()) )
-        .await
-        .unwrap();
+        .await?;
         // todo stream rows
-        candidates.into_iter().map(|r| r.into()).collect()
+        Ok(candidates.into_iter().map(|r| r.into()).collect())
     }
 }

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n                insert into recent_restaurants (homie_id, user_id, restaurant_id)\n                select\n                    h.id,\n                    ?,\n                    r.id\n                from homies h\n                join restaurants r on r.name = ? and r.user_id = ?\n                where h.name = ? and h.user_id = ?\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "70366d83e33bf016d2a14e2c3d3e02db74cc8679a3866ae7185472b88c90c454"
+}

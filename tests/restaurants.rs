@@ -7,7 +7,7 @@ use sqlx::SqlitePool;
 #[cfg_attr(not(feature = "sqlite_tests"), ignore)]
 #[sqlx::test(fixtures("homies", "restaurants"))]
 async fn test_add_existing_restaurant_fails(pool: SqlitePool) -> Result<()> {
-    let actual = create_restaurant("Pizza".into(), -1, &pool).await;
+    let actual = create_restaurant("Pizza".to_string(), -1, &pool).await;
 
     assert_eq!(
         format!("Restaurant already exists: {:?}", "Pizza"),
@@ -19,7 +19,7 @@ async fn test_add_existing_restaurant_fails(pool: SqlitePool) -> Result<()> {
 #[cfg_attr(not(feature = "sqlite_tests"), ignore)]
 #[sqlx::test(fixtures("homies", "restaurants"))]
 async fn test_add_restaurant(pool: SqlitePool) -> Result<()> {
-    let result = create_restaurant("Thai".into(), -2, &pool).await?;
+    let result = create_restaurant("Thai".to_string(), -2, &pool).await?;
 
     assert_eq!("Thai", result.name.as_str());
 
